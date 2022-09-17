@@ -3,7 +3,7 @@ import wandb
 
 import copy
 from pathlib import Path
-from tqdm.notebook import tqdm
+from tqdm import tqdm
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -207,7 +207,7 @@ def valid_one_epoch(cfg, epoch, valid_loader, model, loss_fn):
         description = f'VALID epoch: {epoch}, loss: {loss.item():.4f}'
         pbar.set_description(description)
     
-    return {'loss': losses.avg, 'correlatioin': scores.avg}
+    return {'loss': losses.avg, 'correlation': scores.avg}
 
 
 ## main
