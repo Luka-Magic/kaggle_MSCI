@@ -155,7 +155,7 @@ def main(cfg: DictConfig):
     input_size = test_input.shape[1]
     output_size = test_input.shape[1]
 
-    test_loader = DataLoaderCOO(train_inputs=test_input, train_targets=None, train_idx=None, batch_size=cfg.test_bs, shuffle=False, drop_last=False)
+    test_loader = DataLoaderCOO(train_inputs=test_input, train_target=None, train_idx=None, batch_size=cfg.test_bs, shuffle=False, drop_last=False)
 
     preds_all = None
 
