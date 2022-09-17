@@ -222,7 +222,7 @@ def main(cfg: DictConfig):
     data_dir = Path.cwd().parents[5] / 'data' / 'data'
     save_dir = Path.cwd().parents[5] / 'output' / 'cite' / exp_name
     save_dir.mkdir(exist_ok=True)
-    cfg.data_dir = data_dir
+    cfg['data_dir'] = data_dir
 
     # データのロードと整形
     train_input, train_target = load_data(cfg)
