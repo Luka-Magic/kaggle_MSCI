@@ -55,10 +55,10 @@ def load_data(data_dir, device):
 
     return train_input, train_target
 
-def create_fold(n_samples, cfg):
+def create_fold(cfg, data_dir, n_samples):
     if cfg.fold == 'GroupKFold':
-        train_idx = np.load(cfg.data_dir / 'train_cite_inputs_idxcol.npz', allow_pickle=True)['index']
-        train_meta = pd.read_parquet(cfg.data_dir / 'metadata.parquet')
+        train_idx = np.load(data_dir / 'train_cite_inputs_idxcol.npz', allow_pickle=True)['index']
+        train_meta = pd.read_parquet(data_dir / 'metadata.parquet')
         train_meta = train_meta.query('cell_id in @train_idx').reset_index(drop=True)
         kfold = GroupKFold(n_splits=cfg.n_folds)
         fold_list = list(kfold.split(X=range(n_samples), groups=train_meta[cfg.group].values))
@@ -228,7 +228,7 @@ def main(cfg: DictConfig):
     n_samples = train_input.shape[0]
     input_size = train_input.shape[1]
     output_size = train_target.shape[1]
-    fold_list = create_fold(n_samples, cfg)
+    fold_list = create_fold(cfg, data_dir, n_samples)
 
     # foldごとに学習
     for fold in range(cfg.n_folds):
@@ -276,7 +276,7 @@ def main(cfg: DictConfig):
             
             if best_fold_score['correlation'] < valid_result['correlation']:
                 best_fold_score['correlation'] = valid_result['correlation']
-                wandb.run.summary['']
+                wandb.run.summary['best_correlation'] = best_fold_score['correlation']
                 torch.save(model.state_dict(), save_dir / f'{exp_name}_fold{fold}.pth')
     
         del model, loss_fn, optimizer, scheduler, train_result, valid_result, train_indices, valid_indices, best_fold_score
