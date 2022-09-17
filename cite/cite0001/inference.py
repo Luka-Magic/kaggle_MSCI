@@ -160,6 +160,7 @@ def main(cfg: DictConfig):
 
     preds_all = None
 
+    model_num = 0
     for model_path in save_dir.glob('*.pth'):
         model = MsciModel(input_size, output_size)
         model.to(cfg.device)
@@ -174,7 +175,11 @@ def main(cfg: DictConfig):
         del preds, model
         torch.cuda.empty_cache()
         gc.collect()
-    preds_all /= 3.
+        model_num += 1
+    preds_all /= float(model_num)
+
+    del test_loader, test_input
+    gc.collect()
 
     test_pred = preds_all.cpu().detach().numpy()
     sub_df = pd.read_parquet(data_dir / 'evaluation.parquet')
