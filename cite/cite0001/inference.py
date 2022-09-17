@@ -182,7 +182,7 @@ def main(cfg: DictConfig):
     gc.collect()
 
     test_pred = preds_all.cpu().detach().numpy()
-    sub_df = pd.read_parquet(data_dir / 'evaluation.parquet')
+    sub_df = pd.read_parquet(data_dir / 'sample_submission.parquet')
     sub_df['target'] = None
     sub_df.loc[:len(test_pred.ravel())-1, 'target'] = test_pred.ravel()
     sub_df = sub_df.round(6)
