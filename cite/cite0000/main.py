@@ -218,14 +218,12 @@ def main(cfg: DictConfig):
     if cfg.wandb:
         wandb.login()
     
-    print(Path.cwd())
     exp_name = Path.cwd().parents[2].name
-    print(exp_name)
-    print(Path.cwd().parents[5])
-    cfg.data_dir = Path.cwd().parents[5] / 'data/data'
+    data_dir = Path.cwd().parents[5] / 'data' / 'data'
     save_dir = Path.cwd().parents[5] / 'output' / 'cite' / exp_name
     save_dir.mkdir(exist_ok=True)
-    
+    cfg.data_dir = data_dir
+
     # データのロードと整形
     train_input, train_target = load_data(cfg)
     n_samples = train_input.shape[0]
