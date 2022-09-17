@@ -39,17 +39,17 @@ def correlation_loss(pred, tgt):
 
 
 ## Dataset
-def load_data(cfg):
+def load_data(data_dir, device):
     # 訓練データの入力の読み込み
-    train_input = scipy.sparse.load_npz(cfg.data_dir / 'train_cite_inputs_values.sparse.npz')
+    train_input = scipy.sparse.load_npz(data_dir / 'train_cite_inputs_values.sparse.npz')
     train_input = load_csr_data_to_gpu(train_input)
     gc.collect()
     ## 最大値で割って0-1に正規化
-    max_input = torch.from_numpy(np.load(cfg.data_dir / 'train_cite_inputs_max_values.npz')['max_input'])[0].to(cfg.device)
+    max_input = torch.from_numpy(np.load(data_dir / 'train_cite_inputs_max_values.npz')['max_input'])[0].to(device)
     train_input.data[...] /= max_input[train_input.indices.long()]
 
     # 訓練データのターゲットの読み込み
-    train_target = scipy.sparse.load_npz(cfg.data_dir / 'train_cite_targets_values.sparse.npz')
+    train_target = scipy.sparse.load_npz(data_dir / 'train_cite_targets_values.sparse.npz')
     train_target = load_csr_data_to_gpu(train_target)
     gc.collect()
 
@@ -222,10 +222,9 @@ def main(cfg: DictConfig):
     data_dir = Path.cwd().parents[5] / 'data' / 'data'
     save_dir = Path.cwd().parents[5] / 'output' / 'cite' / exp_name
     save_dir.mkdir(exist_ok=True)
-    cfg['data_dir'] = data_dir
 
     # データのロードと整形
-    train_input, train_target = load_data(cfg)
+    train_input, train_target = load_data(data_dir, cfg.device)
     n_samples = train_input.shape[0]
     input_size = train_input.shape[1]
     output_size = train_target.shape[1]
