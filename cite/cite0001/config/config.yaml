@@ -1,6 +1,6 @@
 seed: 77
 wandb: True
-wandb_project: msci_test
+wandb_project: kaggle_MSCI
 phase: cite
 
 fold: GroupKFold

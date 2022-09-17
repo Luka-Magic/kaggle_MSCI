@@ -1,7 +1,7 @@
 seed: 77
 wandb: True
-wandb_project: msci_test
-phase: cite
+wandb_project: kaggle_MSCI
+phase: multi
 
 fold: GroupKFold
 group: donor

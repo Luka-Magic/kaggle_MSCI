@@ -20,7 +20,7 @@ import scipy
 from sklearn.model_selection import train_test_split, KFold, GroupKFold, StratifiedGroupKFold
 import sklearn.preprocessing
 import hydra
-from omegaconf import DictConfig
+from omegaconf import DictConfig, OmegaConf
 
 from utils.utils import load_csr_data_to_gpu, make_coo_batch, make_coo_batch_slice, AverageMeter
 
@@ -41,15 +41,15 @@ def correlation_loss(pred, tgt):
 ## Dataset
 def load_data(data_dir, device):
     # 訓練データの入力の読み込み
-    train_input = scipy.sparse.load_npz(data_dir / 'train_cite_inputs_values.sparse.npz')
+    train_input = scipy.sparse.load_npz(data_dir / 'train_multi_inputs_values.sparse.npz')
     train_input = load_csr_data_to_gpu(train_input)
     gc.collect()
     ## 最大値で割って0-1に正規化
-    max_input = torch.from_numpy(np.load(data_dir / 'train_cite_inputs_max_values.npz')['max_input'])[0].to(device)
+    max_input = torch.from_numpy(np.load(data_dir / 'train_multi_inputs_max_values.npz')['max_input'])[0].to(device)
     train_input.data[...] /= max_input[train_input.indices.long()]
 
     # 訓練データのターゲットの読み込み
-    train_target = scipy.sparse.load_npz(data_dir / 'train_cite_targets_values.sparse.npz')
+    train_target = scipy.sparse.load_npz(data_dir / 'train_multi_targets_values.sparse.npz')
     train_target = load_csr_data_to_gpu(train_target)
     gc.collect()
 
@@ -57,7 +57,7 @@ def load_data(data_dir, device):
 
 def create_fold(cfg, data_dir, n_samples):
     if cfg.fold == 'GroupKFold':
-        train_idx = np.load(data_dir / 'train_cite_inputs_idxcol.npz', allow_pickle=True)['index']
+        train_idx = np.load(data_dir / 'train_multi_inputs_idxcol.npz', allow_pickle=True)['index']
         train_meta = pd.read_parquet(data_dir / 'metadata.parquet')
         train_meta = train_meta.query('cell_id in @train_idx').reset_index(drop=True)
         kfold = GroupKFold(n_splits=cfg.n_folds)
@@ -219,7 +219,7 @@ def main(cfg: DictConfig):
     
     exp_name = Path.cwd().parents[2].name
     data_dir = Path.cwd().parents[5] / 'data' / 'data'
-    save_dir = Path.cwd().parents[5] / 'output' / 'cite' / exp_name
+    save_dir = Path.cwd().parents[5] / 'output' / 'multi' / exp_name
     save_dir.mkdir(exist_ok=True)
 
     # データのロードと整形
@@ -233,11 +233,12 @@ def main(cfg: DictConfig):
     for fold in range(cfg.n_folds):
         if fold not in cfg.use_fold:
             continue
-        
-        cfg.fold = fold
 
         if cfg.wandb:
-            wandb.init(project=cfg.wandb_project, entity='luka-magic', name=f'test_{exp_name}_fold{fold}', config=cfg)
+            wandb.config = OmegaConf.to_container(
+                cfg, resolve=True, throw_on_missing=True)
+            wandb.config['fold'] = fold
+            wandb.init(project=cfg.wandb_project, entity='luka-magic', name=f'{exp_name}_fold{fold}', config=wandb.config)
 
         best_fold_score = {'correlation': -1.}
 
@@ -282,7 +283,9 @@ def main(cfg: DictConfig):
                 if cfg.wandb:
                     wandb.run.summary['best_correlation'] = best_fold_score['correlation']
                 torch.save(model.state_dict(), save_dir / f'{exp_name}_fold{fold}.pth')
-    
+        
+        print(f"BEST CORRELATION: {best_fold_score['correlation']}")
+        
         del model, loss_fn, optimizer, scheduler, train_result, valid_result, train_indices, valid_indices, best_fold_score
         wandb.finish()
         gc.collect()

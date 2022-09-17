@@ -20,7 +20,7 @@ import scipy
 from sklearn.model_selection import train_test_split, KFold, GroupKFold, StratifiedGroupKFold
 import sklearn.preprocessing
 import hydra
-from omegaconf import DictConfig
+from omegaconf import DictConfig, OmegaConf
 
 from utils.utils import load_csr_data_to_gpu, make_coo_batch, make_coo_batch_slice, AverageMeter
 
@@ -234,10 +234,11 @@ def main(cfg: DictConfig):
         if fold not in cfg.use_fold:
             continue
         
-        cfg.fold = fold
-
         if cfg.wandb:
-            wandb.init(project=cfg.wandb_project, entity='luka-magic', name=f'test_{exp_name}_fold{fold}', config=cfg)
+            wandb.config = OmegaConf.to_container(
+                cfg, resolve=True, throw_on_missing=True)
+            wandb.config['fold'] = fold
+            wandb.init(project=cfg.wandb_project, entity='luka-magic', name=f'{exp_name}_fold{fold}', config=wandb.config)
 
         best_fold_score = {'correlation': -1.}
 
@@ -282,7 +283,9 @@ def main(cfg: DictConfig):
                 if cfg.wandb:
                     wandb.run.summary['best_correlation'] = best_fold_score['correlation']
                 torch.save(model.state_dict(), save_dir / f'{exp_name}_fold{fold}.pth')
-    
+            
+        print(f"BEST CORRELATION: {best_fold_score['correlation']}")
+        
         del model, loss_fn, optimizer, scheduler, train_result, valid_result, train_indices, valid_indices, best_fold_score
         wandb.finish()
         gc.collect()
