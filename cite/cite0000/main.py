@@ -166,7 +166,6 @@ def train_one_epoch(cfg, epoch, train_loader, model, loss_fn, optimizer, schedul
         optimizer.step()
 
         losses.update(loss.item(), bs)
-        torch.nn.utils.clip_grad_norm_(model.parameters(), cfg.clip_grad_norm)
 
         if scheduler:
             scheduler.step()
