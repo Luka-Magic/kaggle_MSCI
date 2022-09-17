@@ -135,7 +135,7 @@ class MsciModel(nn.Module):
             nn.ReLU(),
             nn.Dropout(p=0.2),
             nn.Linear(256, 128),
-            nn.ReLU(),  
+            nn.ReLU(),
             nn.Linear(128, output_channel),
             # nn.ReLU(),
             nn.Softplus()
@@ -272,12 +272,13 @@ def main(cfg: DictConfig):
                     epoch = epoch,
                     train_loss = train_result['loss'],
                     valid_loss = valid_result['loss'],
-                    correlation = valid_result['correlatioin']
+                    correlation = valid_result['correlation']
                 ))
             
             if best_fold_score['correlation'] < valid_result['correlation']:
                 best_fold_score['correlation'] = valid_result['correlation']
-                wandb.run.summary['best_correlation'] = best_fold_score['correlation']
+                if cfg.wandb:
+                    wandb.run.summary['best_correlation'] = best_fold_score['correlation']
                 torch.save(model.state_dict(), save_dir / f'{exp_name}_fold{fold}.pth')
     
         del model, loss_fn, optimizer, scheduler, train_result, valid_result, train_indices, valid_indices, best_fold_score
