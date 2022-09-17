@@ -257,6 +257,8 @@ def main(cfg: DictConfig):
         
         if cfg.scheduler == None:
             scheduler = None
+        else:
+            scheduler = None
 
         # 学習開始
         for epoch in range(cfg.n_epochs):
