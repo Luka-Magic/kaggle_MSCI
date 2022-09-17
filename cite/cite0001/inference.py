@@ -118,12 +118,12 @@ class MsciModel(nn.Module):
 
 
 ## Test Function
-def test_function(cfg, epoch, valid_loader, model, loss_fn):
+def test_function(cfg, model, test_loader, n_samples, output_size):
     model.eval()
 
-    pbar = tqdm(enumerate(valid_loader), total=len(valid_loader))
+    pbar = tqdm(enumerate(test_loader), total=len(test_loader))
     
-    preds = torch.zeros((cfg.output_size, cfg.output_channel), device=cfg.device, dtype=torch.float32)
+    preds = torch.zeros((n_samples, output_size), device=cfg.device, dtype=torch.float32)
     
     for step, (input, _) in pbar:
         bs = input.shape[0]
@@ -151,19 +151,20 @@ def main(cfg: DictConfig):
     
     # データのロードと整形
     test_input = load_data(data_dir, cfg.device)
-    # n_samples = train_input.shape[0]
+    n_samples = test_input.shape[0]
     input_size = test_input.shape[1]
-    output_size = test_input.shape[1]
+    output_size = cfg.output_size
 
     test_loader = DataLoaderCOO(train_inputs=test_input, train_target=None, train_idx=None, batch_size=cfg.test_bs, shuffle=False, drop_last=False)
 
     preds_all = None
 
-    for model_path in cfg.save_dir.glob('*.pth'):
-        model = MsciModel(cfg.input_channel, cfg.output_channel)
+    for model_path in save_dir.glob('*.pth'):
+        model = MsciModel(input_size, output_size)
         model.to(cfg.device)
+
         model.load_state_dict(torch.load(model_path))
-        preds = test_function(model, test_loader)
+        preds = test_function(cfg, model, test_loader, n_samples, output_size)
 
         if preds_all is not None:
             preds_all += preds
@@ -174,14 +175,14 @@ def main(cfg: DictConfig):
         gc.collect()
     preds_all /= 3.
 
+    test_pred = preds_all.cpu().detach().numpy()
     sub_df = pd.read_parquet(data_dir / 'evaluation.parquet')
     sub_df['target'] = None
-    test_pred = preds_all.cpu().detach().numpy()
     sub_df.loc[:len(test_pred.ravel())-1, 'target'] = test_pred.ravel()
     sub_df = sub_df.round(6)
     sub_df.to_csv(str(save_dir / 'submission.csv'))
 
-    del test_pred, sub_df
+    del preds_all, test_pred, sub_df
     gc.collect()
     torch.cuda.empty_cache()
     
