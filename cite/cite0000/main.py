@@ -219,9 +219,11 @@ def main(cfg: DictConfig):
         wandb.login()
     
     print(Path.cwd())
-    exp_name = Path.cwd().parents[4].name
-    cfg.data_dir = Path.cwd().parents[6] / 'data/data'
-    save_dir = Path.cwd().parents[6] / 'output' / 'cite' / exp_name
+    exp_name = Path.cwd().parents[2].name
+    print(exp_name)
+    print(Path.cwd().parents[5])
+    cfg.data_dir = Path.cwd().parents[5] / 'data/data'
+    save_dir = Path.cwd().parents[5] / 'output' / 'cite' / exp_name
     save_dir.mkdir(exist_ok=True)
     
     # データのロードと整形
