@@ -186,7 +186,7 @@ def main(cfg: DictConfig):
     sub_df['target'] = None
     sub_df.loc[:len(test_pred.ravel())-1, 'target'] = test_pred.ravel()
     sub_df = sub_df.round(6)
-    sub_df.to_csv(str(save_dir / 'submission.csv'))
+    sub_df.to_csv(str(save_dir / 'submission.csv'), index=False)
 
     del preds_all, test_pred, sub_df
     gc.collect()
