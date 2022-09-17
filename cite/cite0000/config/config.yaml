@@ -10,6 +10,8 @@ device: 'cuda:0'
 
 n_epochs: 30
 
+loss: correlation
+
 optimizer: AdamW
 lr: 1e-3
 weight_decay: 1e-2
