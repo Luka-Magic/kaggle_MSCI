@@ -1,5 +1,5 @@
 seed: 77
-wandb: False
+wandb: True
 wandb_project: msci_test
 
 fold: GroupKFold
