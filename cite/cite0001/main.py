@@ -238,7 +238,7 @@ def main(cfg: DictConfig):
             wandb.config = OmegaConf.to_container(
                 cfg, resolve=True, throw_on_missing=True)
             wandb.config['fold'] = fold
-            wandb.cnfig['exp_num'] = exp_name
+            wandb.config['exp_num'] = exp_name
             wandb.init(project=cfg.wandb_project, entity='luka-magic', name=f'{exp_name}_fold{fold}', config=wandb.config)
 
         best_fold_score = {'correlation': -1.}
