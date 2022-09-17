@@ -70,7 +70,7 @@ def create_fold(cfg, data_dir, n_samples):
 
 ## DataLoader
 class DataLoaderCOO:
-    def __init__(self, train_inputs, train_targets, train_idx=None, 
+    def __init__(self, train_inputs, train_target, train_idx=None, 
                  *,
                 batch_size=512, shuffle=False, drop_last=False):
         self.batch_size = batch_size
@@ -78,7 +78,7 @@ class DataLoaderCOO:
         self.drop_last = drop_last
         
         self.train_inputs = train_inputs
-        self.train_targets = train_targets
+        self.train_target = train_target
         
         self.train_idx = train_idx
         
@@ -106,15 +106,15 @@ class DataLoaderCOO:
             slc = slice(i*self.batch_size, (i+1)*self.batch_size)
             if idx_array is None:
                 inp_batch = make_coo_batch_slice(self.train_inputs, i*self.batch_size, (i+1)*self.batch_size)
-                if self.train_targets is not None:
-                    tgt_batch = make_coo_batch_slice(self.train_targets, i*self.batch_size, (i+1)*self.batch_size)
+                if self.train_target is not None:
+                    tgt_batch = make_coo_batch_slice(self.train_target, i*self.batch_size, (i+1)*self.batch_size)
                 else:
                     tgt_batch = None
             else:
                 idx_batch = idx_array[slc]
                 inp_batch = make_coo_batch(self.train_inputs, idx_batch)
                 if self.train_target is not None:
-                    tgt_batch = make_coo_batch(self.train_targets, idx_batch)
+                    tgt_batch = make_coo_batch(self.train_target, idx_batch)
                 else:
                     tgt_batch = None
             yield inp_batch, tgt_batch
