@@ -185,8 +185,9 @@ def main(cfg: DictConfig):
     sub_df = pd.read_parquet(data_dir / 'sample_submission.parquet')
     sub_df['target'] = None
     sub_df.loc[:len(test_pred.ravel())-1, 'target'] = test_pred.ravel()
+    sub_df.set_index('row_id', inplace=True, drop=True)
     sub_df = sub_df.round(6)
-    sub_df.to_csv(str(save_dir / 'submission.csv'), index=False)
+    sub_df.to_csv(str(save_dir / 'submission.csv'))
 
     del preds_all, test_pred, sub_df
     gc.collect()

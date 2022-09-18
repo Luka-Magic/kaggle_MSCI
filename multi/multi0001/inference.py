@@ -219,7 +219,7 @@ def main(cfg: DictConfig):
     sub_df.index.name = 'row_id'
     sub_df = sub_df.round(6)
 
-    sub_df.to_csv(save_dir / 'submission.csv', index=False)
+    sub_df.to_csv(save_dir / 'submission.csv')
 
     del preds_all, sub_df
     gc.collect()
