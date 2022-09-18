@@ -260,11 +260,6 @@ def main(cfg: DictConfig):
                     correlation = valid_result['correlation']
                 ))
             
-            # if best_fold_score['correlation'] < valid_result['correlation']:
-            #     best_fold_score['correlation'] = valid_result['correlation']
-            #     if cfg.wandb:
-            #         wandb.run.summary['best_correlation'] = best_fold_score['correlation']
-            #     torch.save(model.state_dict(), )
             earlystopping(valid_result['correlation'], model)
             if earlystopping.early_stop:
                 print(f'Early Stop: epoch{epoch}')
