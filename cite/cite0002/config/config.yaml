@@ -10,7 +10,9 @@ use_fold: [0, 1, 2]
 device: 'cuda:0'
 output_size: 140
 
-n_epochs: 30
+n_epochs: 100
+earlystopping: True
+patience: 5
 
 loss: correlation
 
