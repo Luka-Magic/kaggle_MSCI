@@ -8,6 +8,7 @@ group: donor
 n_folds: 3
 use_fold: [0, 1, 2]
 device: 'cuda:0'
+output_size: 23418
 
 n_epochs: 30
 
