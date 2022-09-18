@@ -1,4 +1,5 @@
 from random import shuffle
+from multi.multi0002.utils.utils import EarlyStopping
 import wandb
 
 import copy
@@ -22,7 +23,7 @@ import sklearn.preprocessing
 import hydra
 from omegaconf import DictConfig, OmegaConf
 
-from utils.utils import load_csr_data_to_gpu, make_coo_batch, make_coo_batch_slice, AverageMeter
+from utils.utils import load_csr_data_to_gpu, make_coo_batch, make_coo_batch_slice, AverageMeter, EarlyStopping
 from model import MsciModel
 
 ## Loss
@@ -218,6 +219,8 @@ def main(cfg: DictConfig):
             wandb.config['fold'] = fold
             wandb.config['exp_name'] = exp_name
             wandb.init(project=cfg.wandb_project, entity='luka-magic', name=f'{exp_name}_fold{fold}', config=wandb.config)
+            
+        save_model_path = save_dir / f'{exp_name}_fold{fold}.pth'
 
         best_fold_score = {'correlation': -1.}
 
@@ -225,6 +228,8 @@ def main(cfg: DictConfig):
 
         train_loader = DataLoaderCOO(train_input, train_target, train_idx=train_indices, batch_size=cfg.train_bs, shuffle=True, drop_last=True)
         valid_loader = DataLoaderCOO(train_input, train_target, train_idx=valid_indices, batch_size=cfg.valid_bs, shuffle=True, drop_last=False)
+
+        earlystopping = EarlyStopping(cfg, save_model_path)
 
         model = MsciModel(input_size, output_size).to(cfg.device)
 
@@ -257,12 +262,16 @@ def main(cfg: DictConfig):
                     correlation = valid_result['correlation']
                 ))
             
-            if best_fold_score['correlation'] < valid_result['correlation']:
-                best_fold_score['correlation'] = valid_result['correlation']
-                if cfg.wandb:
-                    wandb.run.summary['best_correlation'] = best_fold_score['correlation']
-                torch.save(model.state_dict(), save_dir / f'{exp_name}_fold{fold}.pth')
-        
+            # if best_fold_score['correlation'] < valid_result['correlation']:
+            #     best_fold_score['correlation'] = valid_result['correlation']
+            #     if cfg.wandb:
+            #         wandb.run.summary['best_correlation'] = best_fold_score['correlation']
+            #     torch.save(model.state_dict(), )
+            earlystopping(valid_result['correlation'], model)
+            if earlystopping.early_stop:
+                print(f'Early Stop: epoch{epoch}')
+                break
+
         print(f"BEST CORRELATION: {best_fold_score['correlation']}")
         
         del model, loss_fn, optimizer, scheduler, train_result, valid_result, train_indices, valid_indices, best_fold_score

@@ -10,12 +10,14 @@ use_fold: [0, 1, 2]
 device: 'cuda:0'
 output_size: 23418
 
-n_epochs: 30
+n_epochs: 100
+earlystopping: True
+patience: 5
 
 loss: correlation
 
 optimizer: AdamW
-lr: 1e-3
+lr: 5e-3
 weight_decay: 1e-2
 
 scheduler: None
