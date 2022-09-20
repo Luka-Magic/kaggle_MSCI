@@ -193,6 +193,8 @@ hyperparameter_defaults = dict(
     dropout1 = 0.0,
     hidden2 = 128,
     dropout2 = 0.0,
+    hidden3 = 128,
+    dropout3 = 0.0,
 )
 
 wandb.init(config=hyperparameter_defaults, project='kaggle_MSCI_multi_sweep')
