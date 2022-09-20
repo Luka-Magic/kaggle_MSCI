@@ -193,6 +193,7 @@ hyperparameter_defaults = dict(
     dropout1 = 0.0,
     hidden2 = 128,
     dropout2 = 0.0,
+    lr = 1e-3
 )
 
 wandb.init(config=hyperparameter_defaults, project='kaggle_MSCI_multi_sweep')
@@ -250,7 +251,7 @@ def main():
         model = MsciModel(sweep_config, input_size, output_size).to(cfg.device)
 
         if cfg.optimizer == 'AdamW':
-            optimizer = torch.optim.AdamW(model.parameters())
+            optimizer = torch.optim.AdamW(model.parameters(), lr=sweep_config.lr, weight_decay=cfg.wd)
         
         if cfg.loss == 'correlation':
             loss_fn = correlation_loss
