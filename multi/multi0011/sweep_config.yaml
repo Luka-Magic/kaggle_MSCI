@@ -1,0 +1,26 @@
+program: train.py
+method: bayes
+metric:
+  goal: maximize
+  name: correlation
+parameters:
+  hidden1:
+    values: [4, 8, 16, 32, 64, 128, 256, 512, 1024]
+  dropout1:
+    values: [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
+  hidden2:
+    values: [4, 8, 16, 32, 64, 128, 256, 512, 1024]
+  dropout2:
+    values: [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
+  hidden3:
+    values: [4, 8, 16, 32, 64, 128, 256, 512, 1024]
+  dropout3:
+    values: [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
+  hidden4:
+    values: [4, 8, 16, 32, 64, 128, 256, 512, 1024]
+  dropout4:
+    values: [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
+  hidden5:
+    values: [4, 8, 16, 32, 64, 128, 256, 512, 1024]
+  dropout5:
+    values: [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
