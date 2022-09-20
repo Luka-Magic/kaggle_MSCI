@@ -198,30 +198,30 @@ hyperparameter_defaults = dict(
 wandb.init(config=hyperparameter_defaults, project='kaggle_MSCI_multi_sweep')
 sweep_config = wandb.config
 
+# # 初期設定
+# if cfg.wandb:
+#     wandb.login()
+cfg = OmegaConf.load('config/config.yaml')
+
+# exp_name = Path.cwd().parents[2].name
+# data_dir = Path.cwd().parents[5] / 'data' / 'data'
+# save_dir = Path.cwd().parents[5] / 'output' / 'multi' / exp_name
+# save_dir.mkdir(exist_ok=True)
+
+exp_name = Path.cwd().name
+data_dir = Path.cwd().parents[2] / 'data' / 'data'
+save_dir = Path.cwd().parents[2] / 'output' / 'multi' / exp_name
+save_dir.mkdir(exist_ok=True)
+
+# データのロードと整形
+train_input, train_target = load_data(data_dir, cfg.device)
+n_samples = train_input.shape[0]
+input_size = train_input.shape[1]
+output_size = train_target.shape[1]
+fold_list = create_fold(cfg, data_dir, n_samples)
+
 ## main
 def main():
-    # # 初期設定
-    # if cfg.wandb:
-    #     wandb.login()
-    cfg = OmegaConf.load('config/config.yaml')
-    
-    # exp_name = Path.cwd().parents[2].name
-    # data_dir = Path.cwd().parents[5] / 'data' / 'data'
-    # save_dir = Path.cwd().parents[5] / 'output' / 'multi' / exp_name
-    # save_dir.mkdir(exist_ok=True)
-
-    exp_name = Path.cwd().name
-    data_dir = Path.cwd().parents[2] / 'data' / 'data'
-    save_dir = Path.cwd().parents[2] / 'output' / 'multi' / exp_name
-    save_dir.mkdir(exist_ok=True)
-
-    # データのロードと整形
-    train_input, train_target = load_data(data_dir, cfg.device)
-    n_samples = train_input.shape[0]
-    input_size = train_input.shape[1]
-    output_size = train_target.shape[1]
-    fold_list = create_fold(cfg, data_dir, n_samples)
-
     # foldごとに学習
     for fold in range(cfg.n_folds):
         if fold not in cfg.use_fold:
