@@ -251,7 +251,7 @@ def main():
         model = MsciModel(sweep_config, input_size, output_size).to(cfg.device)
 
         if cfg.optimizer == 'AdamW':
-            optimizer = torch.optim.AdamW(model.parameters(), lr=sweep_config.lr, weight_decay=cfg.wd)
+            optimizer = torch.optim.AdamW(model.parameters(), lr=sweep_config.lr, weight_decay=cfg.weight_decay)
         
         if cfg.loss == 'correlation':
             loss_fn = correlation_loss
