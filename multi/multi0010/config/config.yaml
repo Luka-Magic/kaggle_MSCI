@@ -10,7 +10,7 @@ use_fold: [0]
 device: 'cuda:0'
 output_size: 23418
 
-n_epochs: 100
+n_epochs: 30
 earlystopping: True
 patience: 5
 
