@@ -199,11 +199,11 @@ wandb.init(config=hyperparameter_defaults, project='kaggle_MSCI_multi_sweep')
 sweep_config = wandb.config
 
 ## main
-@hydra.main(config_path='config', config_name='config')
-def main(cfg: DictConfig):
+def main():
     # # 初期設定
     # if cfg.wandb:
     #     wandb.login()
+    cfg = OmegaConf.load('config/config.yaml')
     
     exp_name = Path.cwd().parents[2].name
     data_dir = Path.cwd().parents[5] / 'data' / 'data'
