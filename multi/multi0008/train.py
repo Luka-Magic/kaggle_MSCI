@@ -205,9 +205,14 @@ def main():
     #     wandb.login()
     cfg = OmegaConf.load('config/config.yaml')
     
-    exp_name = Path.cwd().parents[2].name
-    data_dir = Path.cwd().parents[5] / 'data' / 'data'
-    save_dir = Path.cwd().parents[5] / 'output' / 'multi' / exp_name
+    # exp_name = Path.cwd().parents[2].name
+    # data_dir = Path.cwd().parents[5] / 'data' / 'data'
+    # save_dir = Path.cwd().parents[5] / 'output' / 'multi' / exp_name
+    # save_dir.mkdir(exist_ok=True)
+
+    exp_name = Path.cwd().name
+    data_dir = Path.cwd().parents[2] / 'data' / 'data'
+    save_dir = Path.cwd().parents[2] / 'output' / 'multi' / exp_name
     save_dir.mkdir(exist_ok=True)
 
     # データのロードと整形
