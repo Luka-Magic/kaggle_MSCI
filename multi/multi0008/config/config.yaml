@@ -1,0 +1,35 @@
+seed: 77
+wandb: False
+wandb_project: kaggle_MSCI_multi_sweep
+phase: multi
+
+fold: GroupKFold
+group: donor
+n_folds: 3
+use_fold: [0]
+device: 'cuda:0'
+output_size: 23418
+
+n_epochs: 100
+earlystopping: True
+patience: 5
+
+loss: correlation
+
+optimizer: AdamW
+lr: 5e-3
+weight_decay: 1e-2
+
+scheduler: None
+T_0: ${n_epochs} # CAWR
+T_mult: 1 # CAWR
+eta_min: 1e-9 # CAWR
+
+pct_start: 0.1 # OCLR
+div_factor: 25. # OCLR
+final_div_factor: 1000. # OCLR
+
+train_bs: 512
+valid_bs: 512
+test_bs: 512
+
