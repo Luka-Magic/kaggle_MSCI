@@ -40,12 +40,11 @@ def correlation_loss(pred, tgt):
 
 
 ## Dataset
-def load_and_pca_data(cfg, data_dir, pca_delete):
+def load_and_pca_data(cfg, data_dir):
     # 訓練データの入力の読み込み
     train_input = scipy.sparse.load_npz(data_dir / 'train_multi_inputs_values.sparse.npz')
     print('PCA now...')
-    pca_train_model = pca_delete
-    # pca_train_model = TruncatedSVD(n_components=cfg.latent_dim, random_state=cfg.seed)
+    pca_train_model = TruncatedSVD(n_components=cfg.latent_dim, random_state=cfg.seed)
     train_input = pca_train_model.fit_transform(train_input)
     print('PCA complate')
     gc.collect()
@@ -110,6 +109,7 @@ class DataLoaderCOO:
             if idx_array is None:
                 if not self.pca:
                     inp_batch = make_coo_batch_slice(self.train_inputs, i*self.batch_size, (i+1)*self.batch_size)
+                    inp_batch = torch.from_array(inp_batch)
                 else:
                     inp_batch = self.train_inputs[i*self.batch_size:(i+1)*self.batch_size, :]
                 if self.train_target is not None:
@@ -122,6 +122,7 @@ class DataLoaderCOO:
                     inp_batch = make_coo_batch(self.train_inputs, idx_batch)
                 else:
                     inp_batch = self.train_inputs[idx_batch, :]
+                    inp_batch = torch.from_array(inp_batch)
                 if self.train_target is not None:
                     tgt_batch = make_coo_batch(self.train_target, idx_batch)
                 else:
@@ -210,12 +211,10 @@ def main(cfg: DictConfig):
     save_dir.mkdir(exist_ok=True)
 
     # データのロードと整形
-    with open(str(save_dir / 'pca_train_model.pkl'), 'rb') as f:
-        pca_delete = pickle.load(f)
-    train_input, train_target, pca_train_model = load_and_pca_data(cfg, data_dir, pca_delete)
-    # with open(str(save_dir / 'pca_train_model.pkl'), 'wb') as f:
-    #     pickle.dump(pca_train_model, f)
-    del pca_train_model, pca_delete
+    train_input, train_target, pca_train_model = load_and_pca_data(cfg, data_dir)
+    with open(str(save_dir / 'pca_train_model.pkl'), 'wb') as f:
+        pickle.dump(pca_train_model, f)
+    del pca_train_model
     gc.collect()
     n_samples = train_input.shape[0]
     if not cfg.pca:
