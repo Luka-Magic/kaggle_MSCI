@@ -109,7 +109,7 @@ class DataLoaderCOO:
             if idx_array is None:
                 if not self.pca:
                     inp_batch = make_coo_batch_slice(self.train_inputs, i*self.batch_size, (i+1)*self.batch_size)
-                    inp_batch = torch.from_array(inp_batch)
+                    inp_batch = torch.from_numpy(inp_batch)
                 else:
                     inp_batch = self.train_inputs[i*self.batch_size:(i+1)*self.batch_size, :]
                 if self.train_target is not None:
@@ -122,7 +122,7 @@ class DataLoaderCOO:
                     inp_batch = make_coo_batch(self.train_inputs, idx_batch)
                 else:
                     inp_batch = self.train_inputs[idx_batch, :]
-                    inp_batch = torch.from_array(inp_batch)
+                    inp_batch = torch.from_numpy(inp_batch)
                 if self.train_target is not None:
                     tgt_batch = make_coo_batch(self.train_target, idx_batch)
                 else:
@@ -148,6 +148,8 @@ def train_one_epoch(cfg, epoch, train_loader, model, loss_fn, optimizer, schedul
         optimizer.zero_grad()
 
         pred = model(input)
+
+        pred = (pred - torch.mean(pred, dim=1, keepdim=True)) / (torch.std(pred, dim=1, keepdim=True) + 1e-10)
 
         loss = loss_fn(pred, target)
         loss.backward()
@@ -182,7 +184,7 @@ def valid_one_epoch(cfg, epoch, valid_loader, model, loss_fn):
         with torch.no_grad():
             pred = model(input)
 
-        pred = (pred - torch.mean(pred, dim=1, keepdim=True)) / (torch.std(pred, dim=1, keepdim=True) + 1e-7)
+        pred = (pred - torch.mean(pred, dim=1, keepdim=True)) / (torch.std(pred, dim=1, keepdim=True) + 1e-10)
 
         batch_score = partial_correlation_score_torch_faster(target, pred)
         for score in batch_score:
@@ -214,6 +216,8 @@ def main(cfg: DictConfig):
     train_input, train_target, pca_train_model = load_and_pca_data(cfg, data_dir)
     with open(str(save_dir / 'pca_train_model.pkl'), 'wb') as f:
         pickle.dump(pca_train_model, f)
+    with open(str(data_dir / f'train_multi_input_tsvd{cfg.latent_dim}_seed{cfg.seed}.pkl'), 'wb') as f:
+        pickle.dump(train_input, f)
     del pca_train_model
     gc.collect()
     n_samples = train_input.shape[0]
@@ -252,7 +256,7 @@ def main(cfg: DictConfig):
         model = MsciModel(input_size, output_size).to(cfg.device)
 
         if cfg.optimizer == 'AdamW':
-            optimizer = torch.optim.AdamW(model.parameters())
+            optimizer = torch.optim.AdamW(model.parameters(), lr=cfg.lr, weight_decay=cfg.weight_decay)
         
         if cfg.loss == 'correlation':
             loss_fn = correlation_loss
