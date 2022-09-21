@@ -40,11 +40,12 @@ def correlation_loss(pred, tgt):
 
 
 ## Dataset
-def load_and_pca_data(cfg, data_dir):
+def load_and_pca_data(cfg, data_dir, pca_delete):
     # 訓練データの入力の読み込み
     train_input = scipy.sparse.load_npz(data_dir / 'train_multi_inputs_values.sparse.npz')
     print('PCA now...')
-    pca_train_model = TruncatedSVD(n_components=cfg.latent_dim, random_state=cfg.seed)
+    pca_train_model = pca_delete
+    # pca_train_model = TruncatedSVD(n_components=cfg.latent_dim, random_state=cfg.seed)
     train_input = pca_train_model.fit_transform(train_input)
     print('PCA complate')
     gc.collect()
@@ -209,10 +210,12 @@ def main(cfg: DictConfig):
     save_dir.mkdir(exist_ok=True)
 
     # データのロードと整形
-    train_input, train_target, pca_train_model = load_and_pca_data(cfg, data_dir)
-    with open(str(save_dir / 'pca_train_model.pkl'), 'wb') as f:
-        pickle.dump(pca_train_model, f)
-    del pca_train_model
+    with open(str(save_dir / 'pca_train_model.pkl'), 'rb') as f:
+        pca_delete = pickle.load(f)
+    train_input, train_target, pca_train_model = load_and_pca_data(cfg, data_dir, pca_delete)
+    # with open(str(save_dir / 'pca_train_model.pkl'), 'wb') as f:
+    #     pickle.dump(pca_train_model, f)
+    del pca_train_model, pca_delete
     gc.collect()
     n_samples = train_input.shape[0]
     if not cfg.pca:
