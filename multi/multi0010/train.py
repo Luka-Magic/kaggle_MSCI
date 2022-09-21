@@ -210,7 +210,7 @@ def main(cfg: DictConfig):
 
     # データのロードと整形
     train_input, train_target, pca_train_model = load_and_pca_data(cfg, data_dir)
-    with open(save_dir / 'pca_train_model.pkl', 'rb') as f:
+    with open(str(save_dir / 'pca_train_model.pkl'), 'wb') as f:
         pickle.dump(pca_train_model, f)
     del pca_train_model
     gc.collect()
