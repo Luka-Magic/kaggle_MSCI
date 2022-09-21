@@ -238,7 +238,7 @@ def main():
             # wandb.config['fold'] = fold
             # wandb.config['exp_name'] = exp_name
             # wandb.init(project=cfg.wandb_project, entity='luka-magic', name=f'{exp_name}_fold{fold}', config=wandb.config)
-            
+        
         save_model_path = save_dir / f'{exp_name}_fold{fold}.pth'
 
         best_fold_score = {'correlation': -1.}

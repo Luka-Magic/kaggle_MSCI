@@ -128,8 +128,8 @@ class EarlyStopping:
                 self.early_stop = True
         else:  #ベストスコアを更新した場合
             self.best_score = score  #ベストスコアを上書き
-            # if self.wandb:
-            #     wandb.run.summary['best_correlation'] = score
+            if self.wandb:
+                wandb.run.summary['best_correlation'] = score
             self.checkpoint(score, model)  #モデルを保存してスコア表示
             self.counter = 0  #ストップカウンタリセット
 

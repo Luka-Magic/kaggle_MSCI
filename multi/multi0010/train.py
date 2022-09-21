@@ -11,6 +11,7 @@ import gc
 import math
 import collections
 from collections import defaultdict
+import pickle
 
 import torch
 import torch.nn as nn
@@ -20,6 +21,7 @@ from sklearn.model_selection import train_test_split, KFold, GroupKFold, Stratif
 import sklearn.preprocessing
 import hydra
 from omegaconf import DictConfig, OmegaConf
+from sklearn.decomposition import PCA, TruncatedSVD
 
 from utils.utils import seed_everything, load_csr_data_to_gpu, make_coo_batch, make_coo_batch_slice, AverageMeter, EarlyStopping
 from model import MsciModel
@@ -38,21 +40,21 @@ def correlation_loss(pred, tgt):
 
 
 ## Dataset
-def load_data(data_dir, device):
+def load_and_pca_data(cfg, data_dir):
     # 訓練データの入力の読み込み
     train_input = scipy.sparse.load_npz(data_dir / 'train_multi_inputs_values.sparse.npz')
-    train_input = load_csr_data_to_gpu(train_input)
+    print('PCA now...')
+    pca_train_model = TruncatedSVD(n_components=cfg.latent_dim, random_state=cfg.seed)
+    train_input = pca_train_model.fit_transform(train_input)
+    print('PCA complate')
     gc.collect()
-    ## 最大値で割って0-1に正規化
-    max_input = torch.from_numpy(np.load(data_dir / 'train_multi_inputs_max_values.npz')['max_input'])[0].to(device)
-    train_input.data[...] /= max_input[train_input.indices.long()]
 
     # 訓練データのターゲットの読み込み
     train_target = scipy.sparse.load_npz(data_dir / 'train_multi_targets_values.sparse.npz')
     train_target = load_csr_data_to_gpu(train_target)
     gc.collect()
 
-    return train_input, train_target
+    return train_input, train_target, pca_train_model
 
 def create_fold(cfg, data_dir, n_samples):
     if cfg.fold == 'GroupKFold':
@@ -71,10 +73,11 @@ def create_fold(cfg, data_dir, n_samples):
 class DataLoaderCOO:
     def __init__(self, train_inputs, train_target, train_idx=None, 
                  *,
-                batch_size=512, shuffle=False, drop_last=False):
+                batch_size=512, shuffle=False, drop_last=False, pca=False):
         self.batch_size = batch_size
         self.shuffle = shuffle
         self.drop_last = drop_last
+        self.pca = pca
         
         self.train_inputs = train_inputs
         self.train_target = train_target
@@ -104,14 +107,20 @@ class DataLoaderCOO:
         for i in range(self.nb_batches):
             slc = slice(i*self.batch_size, (i+1)*self.batch_size)
             if idx_array is None:
-                inp_batch = make_coo_batch_slice(self.train_inputs, i*self.batch_size, (i+1)*self.batch_size)
+                if not self.pca:
+                    inp_batch = make_coo_batch_slice(self.train_inputs, i*self.batch_size, (i+1)*self.batch_size)
+                else:
+                    inp_batch = self.train_inputs[i*self.batch_size:(i+1)*self.batch_size, :]
                 if self.train_target is not None:
                     tgt_batch = make_coo_batch_slice(self.train_target, i*self.batch_size, (i+1)*self.batch_size)
                 else:
                     tgt_batch = None
             else:
                 idx_batch = idx_array[slc]
-                inp_batch = make_coo_batch(self.train_inputs, idx_batch)
+                if not self.pca:
+                    inp_batch = make_coo_batch(self.train_inputs, idx_batch)
+                else:
+                    inp_batch = self.train_inputs[idx_batch, :]
                 if self.train_target is not None:
                     tgt_batch = make_coo_batch(self.train_target, idx_batch)
                 else:
@@ -187,46 +196,32 @@ def valid_one_epoch(cfg, epoch, valid_loader, model, loss_fn):
     return {'loss': losses.avg, 'correlation': scores.avg}
 
 
-## model
-hyperparameter_defaults = dict(
-    hidden1 = 128,
-    dropout1 = 0.0,
-    hidden2 = 128,
-    dropout2 = 0.0,
-    hidden3 = 128,
-    dropout3 = 0.0,
-    hidden4 = 128,
-    dropout4 = 0.0,
-    lr = 1e-3
-)
-
-wandb.init(config=hyperparameter_defaults, project='kaggle_MSCI_multi_sweep')
-sweep_config = wandb.config
-
-# # 初期設定
-# if cfg.wandb:
-#     wandb.login()
-cfg = OmegaConf.load('config/config.yaml')
-
-# exp_name = Path.cwd().parents[2].name
-# data_dir = Path.cwd().parents[5] / 'data' / 'data'
-# save_dir = Path.cwd().parents[5] / 'output' / 'multi' / exp_name
-# save_dir.mkdir(exist_ok=True)
-
-exp_name = Path.cwd().name
-data_dir = Path.cwd().parents[2] / 'data' / 'data'
-save_dir = Path.cwd().parents[2] / 'output' / 'multi' / exp_name
-save_dir.mkdir(exist_ok=True)
-
-# データのロードと整形
-train_input, train_target = load_data(data_dir, cfg.device)
-n_samples = train_input.shape[0]
-input_size = train_input.shape[1]
-output_size = train_target.shape[1]
-fold_list = create_fold(cfg, data_dir, n_samples)
-
 ## main
-def main():
+@hydra.main(config_path='config', config_name='config')
+def main(cfg: DictConfig):
+    # 初期設定
+    if cfg.wandb:
+        wandb.login()
+    
+    exp_name = Path.cwd().parents[2].name
+    data_dir = Path.cwd().parents[5] / 'data' / 'data'
+    save_dir = Path.cwd().parents[5] / 'output' / 'multi' / exp_name
+    save_dir.mkdir(exist_ok=True)
+
+    # データのロードと整形
+    train_input, train_target, pca_train_model = load_and_pca_data(cfg, data_dir)
+    with open(save_dir / 'pca_train_model.pkl', 'rb') as f:
+        pickle.dump(pca_train_model, f)
+    del pca_train_model
+    gc.collect()
+    n_samples = train_input.shape[0]
+    if not cfg.pca:
+        input_size = train_input.shape[1]
+    else:
+        input_size = cfg.latent_dim
+    output_size = train_target.shape[1]
+    fold_list = create_fold(cfg, data_dir, n_samples)
+
     # foldごとに学習
     for fold in range(cfg.n_folds):
         if fold not in cfg.use_fold:
@@ -234,12 +229,12 @@ def main():
         
         seed_everything(cfg.seed)
 
-        # if cfg.wandb:
-            # wandb.config = OmegaConf.to_container(
-            #     cfg, resolve=True, throw_on_missing=True)
-            # wandb.config['fold'] = fold
-            # wandb.config['exp_name'] = exp_name
-            # wandb.init(project=cfg.wandb_project, entity='luka-magic', name=f'{exp_name}_fold{fold}', config=wandb.config)
+        if cfg.wandb:
+            wandb.config = OmegaConf.to_container(
+                cfg, resolve=True, throw_on_missing=True)
+            wandb.config['fold'] = fold
+            wandb.config['exp_name'] = exp_name
+            wandb.init(project=cfg.wandb_project, entity='luka-magic', name=f'{exp_name}_fold{fold}', config=wandb.config)
             
         save_model_path = save_dir / f'{exp_name}_fold{fold}.pth'
 
@@ -247,15 +242,15 @@ def main():
 
         train_indices, valid_indices = fold_list[fold]
 
-        train_loader = DataLoaderCOO(train_input, train_target, train_idx=train_indices, batch_size=cfg.train_bs, shuffle=True, drop_last=True)
-        valid_loader = DataLoaderCOO(train_input, train_target, train_idx=valid_indices, batch_size=cfg.valid_bs, shuffle=True, drop_last=False)
+        train_loader = DataLoaderCOO(train_input, train_target, train_idx=train_indices, batch_size=cfg.train_bs, shuffle=True, drop_last=True, pca=cfg.pca)
+        valid_loader = DataLoaderCOO(train_input, train_target, train_idx=valid_indices, batch_size=cfg.valid_bs, shuffle=True, drop_last=False, pca=cfg.pca)
 
         earlystopping = EarlyStopping(cfg, save_model_path)
 
-        model = MsciModel(sweep_config, input_size, output_size).to(cfg.device)
+        model = MsciModel(input_size, output_size).to(cfg.device)
 
         if cfg.optimizer == 'AdamW':
-            optimizer = torch.optim.AdamW(model.parameters(), lr=sweep_config.lr, weight_decay=cfg.weight_decay)
+            optimizer = torch.optim.AdamW(model.parameters())
         
         if cfg.loss == 'correlation':
             loss_fn = correlation_loss
@@ -270,26 +265,25 @@ def main():
             train_result = train_one_epoch(cfg, epoch, train_loader, model, loss_fn, optimizer, scheduler)
             valid_result = valid_one_epoch(cfg, epoch, valid_loader, model, loss_fn)
 
-            # print('='*40)
-            # print(f"TRAIN {epoch}, loss: {train_result['loss']}")
-            # print(f"VALID {epoch}, loss: {valid_result['loss']}, score: {valid_result['correlation']}")
-            # print('='*40)
-            wandb.log({'correlation': valid_result['correlation']})
+            print('='*40)
+            print(f"TRAIN {epoch}, loss: {train_result['loss']}")
+            print(f"VALID {epoch}, loss: {valid_result['loss']}, score: {valid_result['correlation']}")
+            print('='*40)
 
-            # if cfg.wandb:
-            #     wandb.log(dict(
-            #         epoch = epoch,
-            #         train_loss = train_result['loss'],
-            #         valid_loss = valid_result['loss'],
-            #         correlation = valid_result['correlation']
-            #     ))
+            if cfg.wandb:
+                wandb.log(dict(
+                    epoch = epoch,
+                    train_loss = train_result['loss'],
+                    valid_loss = valid_result['loss'],
+                    correlation = valid_result['correlation']
+                ))
             
             earlystopping(valid_result['correlation'], model)
             if earlystopping.early_stop:
                 print(f'Early Stop: epoch{epoch}')
                 break
 
-        # print(f"BEST CORRELATION: {best_fold_score['correlation']}")
+        print(f"BEST CORRELATION: {best_fold_score['correlation']}")
         
         del model, loss_fn, optimizer, scheduler, train_result, valid_result, train_indices, valid_indices, best_fold_score
         wandb.finish()
