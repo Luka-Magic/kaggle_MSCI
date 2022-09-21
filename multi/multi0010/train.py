@@ -209,6 +209,7 @@ def main(cfg: DictConfig):
     
     exp_name = Path.cwd().parents[2].name
     data_dir = Path.cwd().parents[5] / 'data' / 'data'
+    compressed_data_dir = Path.cwd().parents[5] / 'data' / 'compressed_data'
     save_dir = Path.cwd().parents[5] / 'output' / 'multi' / exp_name
     save_dir.mkdir(exist_ok=True)
 
@@ -216,7 +217,7 @@ def main(cfg: DictConfig):
     train_input, train_target, pca_train_model = load_and_pca_data(cfg, data_dir)
     with open(str(save_dir / 'pca_train_model.pkl'), 'wb') as f:
         pickle.dump(pca_train_model, f)
-    with open(str(data_dir / f'train_multi_input_tsvd{cfg.latent_dim}_seed{cfg.seed}.pkl'), 'wb') as f:
+    with open(str(compressed_data_dir / f'train_multi_input_tsvd{cfg.latent_dim}_seed{cfg.seed}.pkl'), 'wb') as f:
         pickle.dump(train_input, f)
     del pca_train_model
     gc.collect()
