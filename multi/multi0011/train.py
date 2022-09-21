@@ -62,7 +62,7 @@ def load_and_pca_data(cfg, data_dir, compressed_data_dir, save_dir):
     train_target = scipy.sparse.load_npz(data_dir / 'train_multi_targets_values.sparse.npz')
     train_target = load_csr_data_to_gpu(train_target)
     gc.collect()
-    return train_input, train_target, pca_train_model
+    return train_input, train_target
 
 def create_fold(cfg, data_dir, n_samples):
     if cfg.fold == 'GroupKFold':
