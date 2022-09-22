@@ -235,6 +235,7 @@ def main():
     
     cfg.latent_input_dim = sweep_config['latent_input_dim']
     cfg.latent_target_dim = sweep_config['latent_target_dim']
+    cfg.lr = sweep_config['lr']
 
     exp_name = Path.cwd().name
     data_dir = Path.cwd().parents[2] / 'data' / 'data'
@@ -295,7 +296,7 @@ def main():
         
         if cfg.scheduler == 'OneCycleLR':
             scheduler = torch.optim.lr_scheduler.OneCycleLR(
-                optimizer, total_steps=cfg.epoch * len(train_loader), max_lr=cfg.lr, pct_start=cfg.pct_start, div_factor=cfg.div_factor, final_div_factor=cfg.final_div_factor)
+                optimizer, total_steps=cfg.n_epochs * len(train_loader), max_lr=cfg.lr, pct_start=cfg.pct_start, div_factor=cfg.div_factor, final_div_factor=cfg.final_div_factor)
         else:
             scheduler = None
 
