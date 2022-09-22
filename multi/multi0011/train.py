@@ -63,7 +63,7 @@ def load_data(cfg, data_dir, compressed_data_dir):
                 pickle.dump(train_input_compressed, f)
             with open(str(compressed_input_model_path), 'wb') as f:
                 pickle.dump(pca_train_input_model, f)
-            del pca_train_input_model
+            del pca_train_input_model, train_input
         data_dict['train_input_compressed'] = train_input_compressed
         del train_input_compressed
         print('PCA input complate')
@@ -76,7 +76,7 @@ def load_data(cfg, data_dir, compressed_data_dir):
         max_input = torch.from_numpy(np.load(data_dir / 'train_multi_inputs_max_values.npz')['max_input'])[0].to(cfg.device)
         train_input.data[...] /= max_input[train_input.indices.long()]
         data_dict['train_input'] = train_input
-    del train_input
+        del train_input, max_input
     gc.collect()
 
     # 訓練データのターゲットの読み込み
@@ -107,6 +107,7 @@ def load_data(cfg, data_dir, compressed_data_dir):
         print('PCA target complate')
     train_target = load_csr_data_to_gpu(train_target)
     data_dict['train_target'] = train_target
+    del train_target
     gc.collect()
     return data_dict
 
