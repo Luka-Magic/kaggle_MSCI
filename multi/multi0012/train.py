@@ -217,7 +217,7 @@ hyperparameter_defaults = dict(
     hidden2 = 128,
     latent_input_dim = 64,
     latent_target_dim = 64,
-    lr = 1e-3
+    lr = 1e-1
 )
 
 wandb.init(config=hyperparameter_defaults, project='kaggle_MSCI_multi_sweep')
