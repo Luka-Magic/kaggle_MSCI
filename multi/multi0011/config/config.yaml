@@ -14,8 +14,10 @@ n_epochs: 100
 earlystopping: True
 patience: 5
 
-pca: True
-latent_dim: 64
+pca_input: True
+latent_input_dim: 64
+pca_target: True
+latent_taget_dim: 64
 
 loss: correlation
 

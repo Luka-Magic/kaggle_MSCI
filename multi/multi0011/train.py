@@ -40,29 +40,76 @@ def correlation_loss(pred, tgt):
 
 
 ## Dataset
-def load_and_pca_data(cfg, data_dir, compressed_data_dir, save_dir):
+def load_data(cfg, data_dir, compressed_data_dir):
+    data_dict = {}
     # 訓練データの入力の読み込み
-    compressed_path = compressed_data_dir / f'train_multi_input_tsvd{cfg.latent_dim}_seed{cfg.seed}.pkl'
-    if compressed_path.exists():
-        print('PCA data already exists, now loading...')
-        with open(compressed_path, 'rb') as f:
-            train_input = pickle.load(f)
+    compressed_input_path = compressed_data_dir / f'train_multi_input_tsvd{cfg.latent_input_dim}_seed{cfg.seed}.pkl'
+    compressed_input_model_path = compressed_data_dir / f'train_multi_input_tsvd{cfg.latent_input_dim}_seed{cfg.seed}_model.pkl'
+    if cfg.pca_input:
+        ## 入力データをpcaする場合
+        ##   PCAモデル・圧縮データ共に既に存在する場合は圧縮データをロード
+        ##   そうでない場合は元の入力データをロードし次元削減を行い、PCAモデルと圧縮データを共に保存 (modelはinferで使用するため)
+        ##   data_dictに圧縮データだけ加える
+        if compressed_input_path.exists() and compressed_input_model_path.exists():
+            print('PCA input data already exists, now loading...')
+            with open(compressed_input_path, 'rb') as f:
+                train_input_compressed = pickle.load(f)
+        else:
+            train_input = scipy.sparse.load_npz(data_dir / 'train_multi_inputs_values.sparse.npz')
+            print('PCA input now...')
+            pca_train_input_model = TruncatedSVD(n_components=cfg.latent_input_dim, random_state=cfg.seed)
+            train_input_compressed = pca_train_input_model.fit_transform(train_input)
+            with open(str(compressed_input_path), 'wb') as f:
+                pickle.dump(train_input_compressed, f)
+            with open(str(compressed_input_model_path), 'wb') as f:
+                pickle.dump(pca_train_input_model, f)
+            del pca_train_input_model
+        data_dict['train_input_compressed'] = train_input_compressed
+        del train_input_compressed
+        print('PCA input complate')
     else:
+        ## PCAしない場合
         train_input = scipy.sparse.load_npz(data_dir / 'train_multi_inputs_values.sparse.npz')
-        print('PCA now...')
-        pca_train_model = TruncatedSVD(n_components=cfg.latent_dim, random_state=cfg.seed)
-        train_input = pca_train_model.fit_transform(train_input)
-        with open(str(save_dir / 'pca_train_model.pkl'), 'wb') as f:
-            pickle.dump(pca_train_model, f)
-        del pca_train_model
-    print('PCA complate')
+        train_input = load_csr_data_to_gpu(train_input)
+        gc.collect()
+        ## 最大値で割って0-1に正規化
+        max_input = torch.from_numpy(np.load(data_dir / 'train_multi_inputs_max_values.npz')['max_input'])[0].to(cfg.device)
+        train_input.data[...] /= max_input[train_input.indices.long()]
+        data_dict['train_input'] = train_input
+    del train_input
     gc.collect()
 
     # 訓練データのターゲットの読み込み
+    compressed_target_path = compressed_data_dir / f'train_multi_target_tsvd{cfg.latent_target_dim}_seed{cfg.seed}.pkl'
+    compressed_target_model_path = compressed_data_dir / f'train_multi_target_tsvd{cfg.latent_target_dim}_seed{cfg.seed}_model.pkl'
+    
     train_target = scipy.sparse.load_npz(data_dir / 'train_multi_targets_values.sparse.npz')
+    if cfg.pca_target:
+        ## ターゲットをpcaする場合
+        ##   PCAモデル・圧縮データ共に既に存在する場合は圧縮データをロード
+        ##   そうでない場合は元のターゲットデータをロードし次元削減を行い、PCAモデルと圧縮データを共に保存
+        ##   data_dictに圧縮データ "と元データ" を加える。
+        if compressed_target_path.exists() and compressed_target_model_path.exists():
+            print('PCA target data already exists, now loading...')
+            with open(compressed_target_path, 'rb') as f:
+                train_target_compressed = pickle.load(f)
+        else:
+            print('PCA target now...')
+            pca_train_target_model = TruncatedSVD(n_components=cfg.latent_target_dim, random_state=cfg.seed)
+            train_target_compressed = pca_train_target_model.fit_transform(train_target)
+            with open(str(compressed_target_path), 'wb') as f:
+                pickle.dump(train_target_compressed, f)
+            with open(str(compressed_target_model_path), 'wb') as f:
+                pickle.dump(pca_train_target_model, f)
+            del pca_train_target_model
+        data_dict['train_target_compressed'] = train_target_compressed
+        del train_target_compressed
+        print('PCA target complate')
     train_target = load_csr_data_to_gpu(train_target)
+    data_dict['train_target'] = train_target
     gc.collect()
-    return train_input, train_target
+    return data_dict
+
 
 def create_fold(cfg, data_dir, n_samples):
     if cfg.fold == 'GroupKFold':
@@ -78,21 +125,26 @@ def create_fold(cfg, data_dir, n_samples):
 
 
 ## DataLoader
-class DataLoaderCOO:
-    def __init__(self, train_inputs, train_target, train_idx=None, 
+class DataLoader:
+    def __init__(self, cfg, data_dict, train_idx=None, 
                  *,
-                batch_size=512, shuffle=False, drop_last=False, pca=False):
+                batch_size=512, shuffle=False, drop_last=False):
         self.batch_size = batch_size
         self.shuffle = shuffle
         self.drop_last = drop_last
-        self.pca = pca
         
-        self.train_inputs = train_inputs
-        self.train_target = train_target
+        if cfg.pca_input:
+            self.train_inputs = data_dict['train_input_compressed']
+        else:
+            self.train_inputs = data_dict['train_input']
         
+        if cfg.pca_target:
+            self.train_target_compressed = data_dict['train_target_compressed']
+        self.train_target = data_dict['train_target']
+
         self.train_idx = train_idx
         
-        self.nb_examples = len(self.train_idx) if self.train_idx is not None else train_inputs.shape[0]
+        self.nb_examples = len(self.train_idx) if self.train_idx is not None else self.train_inputs.shape[0]
         
         self.nb_batches = self.nb_examples//batch_size
         if not drop_last and not self.nb_examples%batch_size==0:
@@ -101,7 +153,6 @@ class DataLoaderCOO:
     def __iter__(self):
         if self.shuffle:
             shuffled_idx = torch.randperm(self.nb_examples)
-            # shuffled_idx = torch.randperm(self.nb_examples, device=cfg.device)
             if self.train_idx is not None:
                 idx_array = self.train_idx[shuffled_idx]
             else:
@@ -112,30 +163,37 @@ class DataLoaderCOO:
             else:
                 idx_array = None
         
+        batch_dict = {}
         for i in range(self.nb_batches):
             slc = slice(i*self.batch_size, (i+1)*self.batch_size)
             if idx_array is None:
-                if not self.pca:
-                    inp_batch = make_coo_batch_slice(self.train_inputs, i*self.batch_size, (i+1)*self.batch_size)
-                    inp_batch = torch.from_numpy(inp_batch)
+                if not self.pca_input:
+                    batch_dict['input'] = make_coo_batch_slice(self.train_inputs, i*self.batch_size, (i+1)*self.batch_size)
                 else:
-                    inp_batch = self.train_inputs[i*self.batch_size:(i+1)*self.batch_size, :]
+                    batch_dict['input_compressed'] = torch.from_numpy(self.train_inputs[i*self.batch_size:(i+1)*self.batch_size, :])
                 if self.train_target is not None:
-                    tgt_batch = make_coo_batch_slice(self.train_target, i*self.batch_size, (i+1)*self.batch_size)
+                    batch_dict['target'] = make_coo_batch_slice(self.train_target, i*self.batch_size, (i+1)*self.batch_size)
+                    if self.pca_target:
+                        batch_dict['target_compressed'] = torch.from_numpy(self.train_target_compressed[i*self.batch_size:(i+1)*self.batch_size, :])
                 else:
-                    tgt_batch = None
+                    batch_dict['target'] = None
+                    if self.pca_target:
+                        batch_dict['target_compressed'] = None
             else:
                 idx_batch = idx_array[slc]
-                if not self.pca:
-                    inp_batch = make_coo_batch(self.train_inputs, idx_batch)
+                if not self.pca_input:
+                    batch_dict['input'] = make_coo_batch(self.train_inputs, idx_batch)
                 else:
-                    inp_batch = self.train_inputs[idx_batch, :]
-                    inp_batch = torch.from_numpy(inp_batch)
+                    batch_dict['input_compressed'] = torch.from_numpy(self.train_inputs[idx_batch, :])
                 if self.train_target is not None:
-                    tgt_batch = make_coo_batch(self.train_target, idx_batch)
+                    batch_dict['target'] = make_coo_batch(self.train_target, idx_batch)
+                    if self.pca_target:
+                        batch_dict['target_compressed'] = torch.from_numpy(self.train_target_compressed[idx_batch, :])
                 else:
-                    tgt_batch = None
-            yield inp_batch, tgt_batch
+                    batch_dict['target'] = None
+                    if self.pca_target:
+                        batch_dict['target_compressed'] = None
+            yield batch_dict
             
     def __len__(self):
         return self.nb_batches
@@ -148,10 +206,16 @@ def train_one_epoch(cfg, epoch, train_loader, model, loss_fn, optimizer, schedul
 
     losses = AverageMeter()
 
-    for step, (input, target) in pbar:
+    for step, (batch_dict) in pbar:
         bs = input.shape[0]
-        input = input.to(cfg.device)
-        target = target.to_dense().to(cfg.device)
+        if cfg.pca_input:
+            input = batch_dict['input_compressed'].to(cfg.device)
+        else:
+            input = batch_dict['input'].to(cfg.device)
+        if cfg.pca_target:
+            target = batch_dict['target_compressed'].to(cfg.device)
+        else:
+            target = batch_dict['target'].to_dense().to(cfg.device)
 
         optimizer.zero_grad()
 
@@ -174,7 +238,7 @@ def train_one_epoch(cfg, epoch, train_loader, model, loss_fn, optimizer, schedul
 
 
 ## Valid Function
-def valid_one_epoch(cfg, epoch, valid_loader, model, loss_fn):
+def valid_one_epoch(cfg, epoch, valid_loader, model, pca_train_target_model=None):
     model.eval()
 
     pbar = tqdm(enumerate(valid_loader), total=len(valid_loader))
@@ -182,15 +246,23 @@ def valid_one_epoch(cfg, epoch, valid_loader, model, loss_fn):
     losses = AverageMeter()
     scores = AverageMeter()
 
-    partial_correlation_scores = []
-
-    for step, (input, target) in pbar:
+    for step, (batch_dict) in pbar:
         bs = input.shape[0]
-        input = input.to(cfg.device)
-        target = target.to_dense().to(cfg.device)
+        if cfg.pca_input:
+            input = batch_dict['input_compressed'].to(cfg.device)
+        else:
+            input = batch_dict['input'].to(cfg.device)
+        if cfg.pca_target:
+            # target = batch_dict['target_compressed'].to(cfg.device)
+            target = batch_dict['target'].to_dense().to(cfg.device)
+        else:
+            target = batch_dict['target'].to_dense().to(cfg.device)
 
         with torch.no_grad():
             pred = model(input)
+        
+        if cfg.pca_target:
+            pred = pca_train_target_model.inverse_transform(pred)
 
         pred = (pred - torch.mean(pred, dim=1, keepdim=True)) / (torch.std(pred, dim=1, keepdim=True) + 1e-10)
 
@@ -222,13 +294,21 @@ def main(cfg: DictConfig):
     save_dir.mkdir(exist_ok=True)
 
     # データのロードと整形
-    train_input, train_target = load_and_pca_data(cfg, data_dir, compressed_data_dir, save_dir)
-    n_samples = train_input.shape[0]
-    if not cfg.pca:
-        input_size = train_input.shape[1]
+    data_dict = load_data(cfg, data_dir, compressed_data_dir)
+    if cfg.pca_target:
+        compressed_input_model_path = compressed_data_dir / f'train_multi_input_tsvd{cfg.latent_input_dim}_seed{cfg.seed}_model.pkl'
+        with open(compressed_input_model_path, 'rb') as f:
+            pca_train_target_model = pickle.load(f)
+    n_samples = data_dict['train_target'].shape[0]
+    if not cfg.pca_input:
+        input_size = data_dict['train_input'].shape[1]
     else:
-        input_size = cfg.latent_dim
-    output_size = train_target.shape[1]
+        input_size = cfg.latent_input_dim
+    if not cfg.pca_target:
+        output_size = data_dict['train_target'].shape[1]
+    else:
+        output_size = cfg.latent_target_dim
+
     fold_list = create_fold(cfg, data_dir, n_samples)
 
     # foldごとに学習
@@ -251,8 +331,8 @@ def main(cfg: DictConfig):
 
         train_indices, valid_indices = fold_list[fold]
 
-        train_loader = DataLoaderCOO(train_input, train_target, train_idx=train_indices, batch_size=cfg.train_bs, shuffle=True, drop_last=True, pca=cfg.pca)
-        valid_loader = DataLoaderCOO(train_input, train_target, train_idx=valid_indices, batch_size=cfg.valid_bs, shuffle=True, drop_last=False, pca=cfg.pca)
+        train_loader = DataLoader(cfg, data_dict, train_idx=train_indices, batch_size=cfg.train_bs, shuffle=True, drop_last=True)
+        valid_loader = DataLoader(cfg, data_dict, train_idx=valid_indices, batch_size=cfg.valid_bs, shuffle=True, drop_last=False)
 
         earlystopping = EarlyStopping(cfg, save_model_path)
 
@@ -272,7 +352,7 @@ def main(cfg: DictConfig):
         # 学習開始
         for epoch in range(cfg.n_epochs):
             train_result = train_one_epoch(cfg, epoch, train_loader, model, loss_fn, optimizer, scheduler)
-            valid_result = valid_one_epoch(cfg, epoch, valid_loader, model, loss_fn)
+            valid_result = valid_one_epoch(cfg, epoch, valid_loader, model, pca_train_target_model)
 
             print('='*40)
             print(f"TRAIN {epoch}, loss: {train_result['loss']}")
