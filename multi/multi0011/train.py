@@ -256,9 +256,9 @@ def valid_one_epoch(cfg, epoch, valid_loader, model, pca_train_target_model=None
             input = batch_dict['input'].to(cfg.device)
         if cfg.pca_target:
             # target = batch_dict['target_compressed'].to(cfg.device)
-            target = batch_dict['target'].to_dense().to(cfg.device)
+            target = batch_dict['target'].to_dense()
         else:
-            target = batch_dict['target'].to_dense().to(cfg.device)
+            target = batch_dict['target'].to_dense()
         bs = input.shape[0]
 
         with torch.no_grad():
