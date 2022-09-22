@@ -23,7 +23,7 @@ import hydra
 from omegaconf import DictConfig, OmegaConf
 from sklearn.decomposition import PCA, TruncatedSVD
 
-from utils.utils import seed_everything, load_csr_data_to_gpu, make_coo_batch, make_coo_batch_slice, AverageMeter, EarlyStopping
+from utils.utils import seed_everything, make_coo_batch, make_coo_batch_slice, AverageMeter, EarlyStopping, load_data
 from model import MsciModel
 
 ## Loss
@@ -37,79 +37,6 @@ def partial_correlation_score_torch_faster(y_true, y_pred):
 
 def correlation_loss(pred, tgt):
     return -torch.mean(partial_correlation_score_torch_faster(tgt, pred))
-
-
-## Dataset
-def load_data(cfg, data_dir, compressed_data_dir):
-    data_dict = {}
-    # 訓練データの入力の読み込み
-    compressed_input_path = compressed_data_dir / f'train_multi_input_tsvd{cfg.latent_input_dim}_seed{cfg.seed}.pkl'
-    compressed_input_model_path = compressed_data_dir / f'train_multi_input_tsvd{cfg.latent_input_dim}_seed{cfg.seed}_model.pkl'
-    if cfg.pca_input:
-        ## 入力データをpcaする場合
-        ##   PCAモデル・圧縮データ共に既に存在する場合は圧縮データをロード
-        ##   そうでない場合は元の入力データをロードし次元削減を行い、PCAモデルと圧縮データを共に保存 (modelはinferで使用するため)
-        ##   data_dictに圧縮データだけ加える
-        if compressed_input_path.exists() and compressed_input_model_path.exists():
-            print('PCA input data already exists, now loading...')
-            with open(compressed_input_path, 'rb') as f:
-                train_input_compressed = pickle.load(f)
-        else:
-            train_input = scipy.sparse.load_npz(data_dir / 'train_multi_inputs_values.sparse.npz')
-            print('PCA input now...')
-            pca_train_input_model = TruncatedSVD(n_components=cfg.latent_input_dim, random_state=cfg.seed)
-            train_input_compressed = pca_train_input_model.fit_transform(train_input)
-            with open(str(compressed_input_path), 'wb') as f:
-                pickle.dump(train_input_compressed, f)
-            with open(str(compressed_input_model_path), 'wb') as f:
-                pickle.dump(pca_train_input_model, f)
-            del pca_train_input_model, train_input
-        data_dict['train_input_compressed'] = train_input_compressed
-        del train_input_compressed
-        print('PCA input complate')
-    else:
-        ## PCAしない場合
-        train_input = scipy.sparse.load_npz(data_dir / 'train_multi_inputs_values.sparse.npz')
-        train_input = load_csr_data_to_gpu(train_input)
-        gc.collect()
-        ## 最大値で割って0-1に正規化
-        max_input = torch.from_numpy(np.load(data_dir / 'train_multi_inputs_max_values.npz')['max_input'])[0].to(cfg.device)
-        train_input.data[...] /= max_input[train_input.indices.long()]
-        data_dict['train_input'] = train_input
-        del train_input, max_input
-    gc.collect()
-
-    # 訓練データのターゲットの読み込み
-    compressed_target_path = compressed_data_dir / f'train_multi_target_tsvd{cfg.latent_target_dim}_seed{cfg.seed}.pkl'
-    compressed_target_model_path = compressed_data_dir / f'train_multi_target_tsvd{cfg.latent_target_dim}_seed{cfg.seed}_model.pkl'
-    
-    train_target = scipy.sparse.load_npz(data_dir / 'train_multi_targets_values.sparse.npz')
-    if cfg.pca_target:
-        ## ターゲットをpcaする場合
-        ##   PCAモデル・圧縮データ共に既に存在する場合は圧縮データをロード
-        ##   そうでない場合は元のターゲットデータをロードし次元削減を行い、PCAモデルと圧縮データを共に保存
-        ##   data_dictに圧縮データ "と元データ" を加える。
-        if compressed_target_path.exists() and compressed_target_model_path.exists():
-            print('PCA target data already exists, now loading...')
-            with open(compressed_target_path, 'rb') as f:
-                train_target_compressed = pickle.load(f)
-        else:
-            print('PCA target now...')
-            pca_train_target_model = TruncatedSVD(n_components=cfg.latent_target_dim, random_state=cfg.seed)
-            train_target_compressed = pca_train_target_model.fit_transform(train_target)
-            with open(str(compressed_target_path), 'wb') as f:
-                pickle.dump(train_target_compressed, f)
-            with open(str(compressed_target_model_path), 'wb') as f:
-                pickle.dump(pca_train_target_model, f)
-            del pca_train_target_model
-        data_dict['train_target_compressed'] = train_target_compressed
-        del train_target_compressed
-        print('PCA target complate')
-    train_target = load_csr_data_to_gpu(train_target)
-    data_dict['train_target'] = train_target
-    del train_target
-    gc.collect()
-    return data_dict
 
 
 def create_fold(cfg, data_dir, n_samples):
@@ -303,6 +230,8 @@ def main(cfg: DictConfig):
         compressed_target_model_path = compressed_data_dir / f'train_multi_target_tsvd{cfg.latent_input_dim}_seed{cfg.seed}_model.pkl'
         with open(compressed_target_model_path, 'rb') as f:
             pca_train_target_model = pickle.load(f)
+    else:
+        pca_train_target_model = None
     n_samples = data_dict['train_target'].shape[0]
     if not cfg.pca_input:
         input_size = data_dict['train_input'].shape[1]

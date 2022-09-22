@@ -4,7 +4,9 @@ import collections
 import torch
 import numpy as np
 import wandb
-
+import pickle
+import scipy
+from sklearn.decomposition import PCA, TruncatedSVD
 
 def seed_everything(seed):
     os.environ['PYTHONHASHSEED'] = str(seed)
@@ -45,6 +47,78 @@ def make_coo_batch_slice(torch_csr, start, end, device='cuda:0'):
     coo_row = torch.repeat_interleave(torch.arange(end-start, device=device), th_indptr[start+1:end+1] - th_indptr[start:end])
     coo_batch = torch.sparse_coo_tensor(torch.vstack([coo_row, coo_col]), coo_data, [end-start, th_shape[1]])
     return coo_batch
+
+## Dataset
+def load_data(cfg, data_dir, compressed_data_dir):
+    data_dict = {}
+    # 訓練データの入力の読み込み
+    compressed_input_path = compressed_data_dir / f'train_multi_input_tsvd{cfg.latent_input_dim}_seed{cfg.seed}.pkl'
+    compressed_input_model_path = compressed_data_dir / f'train_multi_input_tsvd{cfg.latent_input_dim}_seed{cfg.seed}_model.pkl'
+    if cfg.pca_input:
+        ## 入力データをpcaする場合
+        ##   PCAモデル・圧縮データ共に既に存在する場合は圧縮データをロード
+        ##   そうでない場合は元の入力データをロードし次元削減を行い、PCAモデルと圧縮データを共に保存 (modelはinferで使用するため)
+        ##   data_dictに圧縮データだけ加える
+        if compressed_input_path.exists() and compressed_input_model_path.exists():
+            print('PCA input data already exists, now loading...')
+            with open(compressed_input_path, 'rb') as f:
+                train_input_compressed = pickle.load(f)
+        else:
+            train_input = scipy.sparse.load_npz(data_dir / 'train_multi_inputs_values.sparse.npz')
+            print('PCA input now...')
+            pca_train_input_model = TruncatedSVD(n_components=cfg.latent_input_dim, random_state=cfg.seed)
+            train_input_compressed = pca_train_input_model.fit_transform(train_input)
+            with open(str(compressed_input_path), 'wb') as f:
+                pickle.dump(train_input_compressed, f)
+            with open(str(compressed_input_model_path), 'wb') as f:
+                pickle.dump(pca_train_input_model, f)
+            del pca_train_input_model, train_input
+        data_dict['train_input_compressed'] = train_input_compressed
+        del train_input_compressed
+        print('PCA input complate')
+    else:
+        ## PCAしない場合
+        train_input = scipy.sparse.load_npz(data_dir / 'train_multi_inputs_values.sparse.npz')
+        train_input = load_csr_data_to_gpu(train_input)
+        gc.collect()
+        ## 最大値で割って0-1に正規化
+        max_input = torch.from_numpy(np.load(data_dir / 'train_multi_inputs_max_values.npz')['max_input'])[0].to(cfg.device)
+        train_input.data[...] /= max_input[train_input.indices.long()]
+        data_dict['train_input'] = train_input
+        del train_input, max_input
+    gc.collect()
+
+    # 訓練データのターゲットの読み込み
+    compressed_target_path = compressed_data_dir / f'train_multi_target_tsvd{cfg.latent_target_dim}_seed{cfg.seed}.pkl'
+    compressed_target_model_path = compressed_data_dir / f'train_multi_target_tsvd{cfg.latent_target_dim}_seed{cfg.seed}_model.pkl'
+    
+    train_target = scipy.sparse.load_npz(data_dir / 'train_multi_targets_values.sparse.npz')
+    if cfg.pca_target:
+        ## ターゲットをpcaする場合
+        ##   PCAモデル・圧縮データ共に既に存在する場合は圧縮データをロード
+        ##   そうでない場合は元のターゲットデータをロードし次元削減を行い、PCAモデルと圧縮データを共に保存
+        ##   data_dictに圧縮データ "と元データ" を加える。
+        if compressed_target_path.exists() and compressed_target_model_path.exists():
+            print('PCA target data already exists, now loading...')
+            with open(compressed_target_path, 'rb') as f:
+                train_target_compressed = pickle.load(f)
+        else:
+            print('PCA target now...')
+            pca_train_target_model = TruncatedSVD(n_components=cfg.latent_target_dim, random_state=cfg.seed)
+            train_target_compressed = pca_train_target_model.fit_transform(train_target)
+            with open(str(compressed_target_path), 'wb') as f:
+                pickle.dump(train_target_compressed, f)
+            with open(str(compressed_target_model_path), 'wb') as f:
+                pickle.dump(pca_train_target_model, f)
+            del pca_train_target_model
+        data_dict['train_target_compressed'] = train_target_compressed
+        del train_target_compressed
+        print('PCA target complate')
+    train_target = load_csr_data_to_gpu(train_target)
+    data_dict['train_target'] = train_target
+    del train_target
+    gc.collect()
+    return data_dict
 
 class AverageMeter(object):
     """Computes and stores the average and current value"""
