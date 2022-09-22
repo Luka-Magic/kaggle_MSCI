@@ -10,10 +10,8 @@ class MsciModel(nn.Module):
         self.mlp = nn.Sequential(
             nn.Linear(input_channel, cfg.hidden1),
             nn.ReLU(),
-            nn.Dropout(p=cfg.dropout1),
             nn.Linear(cfg.hidden1, cfg.hidden2),
             nn.ReLU(),            
-            nn.Dropout(p=cfg.dropout2),
             nn.Linear(cfg.hidden2, output_channel),
             nn.Softplus()
         )
