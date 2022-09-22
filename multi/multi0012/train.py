@@ -216,7 +216,7 @@ hyperparameter_defaults = dict(
     hidden1 = 128,
     hidden2 = 128,
     latent_input_dim = 64,
-    latent_target_dim = 64,
+    latent_target_dim = 256,
     lr = 1e-1
 )
 
@@ -246,7 +246,7 @@ def main():
     # データのロードと整形
     data_dict = load_data(cfg, data_dir, compressed_data_dir)
     if cfg.pca_target:
-        compressed_target_model_path = compressed_data_dir / f'train_multi_target_tsvd{cfg.latent_input_dim}_seed{cfg.seed}_model.pkl'
+        compressed_target_model_path = compressed_data_dir / f'train_multi_target_tsvd{cfg.latent_target_dim}_seed{cfg.seed}_model.pkl'
         with open(compressed_target_model_path, 'rb') as f:
             pca_train_target_model = pickle.load(f)
     else:
