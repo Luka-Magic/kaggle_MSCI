@@ -13,4 +13,4 @@ parameters:
   latent_target_dim:
     values: [16, 32, 64, 128, 256, 512]
   lr:
-    values: [1e-3, 5e-3, 1e-2, 5e-2, 1e-1, 5e-1, 1]
+    values: [1e-2, 5e-2, 1e-1, 5e-1, 1, 5, 10]
