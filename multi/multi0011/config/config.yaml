@@ -16,7 +16,7 @@ patience: 5
 
 pca_input: True
 latent_input_dim: 64
-pca_target: False
+pca_target: True
 latent_target_dim: 64
 
 loss: correlation
