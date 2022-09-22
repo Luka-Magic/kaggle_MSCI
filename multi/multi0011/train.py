@@ -133,6 +133,8 @@ class DataLoader:
         self.batch_size = batch_size
         self.shuffle = shuffle
         self.drop_last = drop_last
+        self.pca_target = cfg.pca_target
+        self.pca_input = cfg.pca_input
         
         if cfg.pca_input:
             self.train_inputs = data_dict['train_input_compressed']
