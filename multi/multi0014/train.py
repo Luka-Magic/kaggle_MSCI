@@ -235,7 +235,6 @@ def main():
     #     wandb.login()
     
     cfg.latent_input_dim = sweep_config['latent_input_dim']
-    cfg.latent_target_dim = sweep_config['latent_target_dim']
     cfg.lr = sweep_config['lr']
 
     exp_name = Path.cwd().name
