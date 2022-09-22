@@ -267,8 +267,6 @@ def valid_one_epoch(cfg, epoch, valid_loader, model, pca_train_target_model=None
         if cfg.pca_target:
             pred = pca_train_target_model.inverse_transform(pred.detach().cpu().numpy())
             pred = torch.from_numpy(pred)
-            print(f'pred:{pred.shape}')
-            print(f'target:{target.shape}')
 
         pred = (pred - torch.mean(pred, dim=1, keepdim=True)) / (torch.std(pred, dim=1, keepdim=True) + 1e-10)
 
@@ -302,8 +300,8 @@ def main(cfg: DictConfig):
     # データのロードと整形
     data_dict = load_data(cfg, data_dir, compressed_data_dir)
     if cfg.pca_target:
-        compressed_input_model_path = compressed_data_dir / f'train_multi_input_tsvd{cfg.latent_input_dim}_seed{cfg.seed}_model.pkl'
-        with open(compressed_input_model_path, 'rb') as f:
+        compressed_target_model_path = compressed_data_dir / f'train_multi_target_tsvd{cfg.latent_input_dim}_seed{cfg.seed}_model.pkl'
+        with open(compressed_target_model_path, 'rb') as f:
             pca_train_target_model = pickle.load(f)
     n_samples = data_dict['train_target'].shape[0]
     if not cfg.pca_input:
