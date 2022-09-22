@@ -267,6 +267,8 @@ def valid_one_epoch(cfg, epoch, valid_loader, model, pca_train_target_model=None
         if cfg.pca_target:
             pred = pca_train_target_model.inverse_transform(pred.detach().cpu().numpy())
             pred = torch.from_numpy(pred)
+            print(f'pred:{pred.shape}')
+            print(f'target:{target.shape}')
 
         pred = (pred - torch.mean(pred, dim=1, keepdim=True)) / (torch.std(pred, dim=1, keepdim=True) + 1e-10)
 
