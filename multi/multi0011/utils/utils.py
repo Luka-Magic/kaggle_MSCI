@@ -6,6 +6,7 @@ import numpy as np
 import wandb
 import pickle
 import scipy
+import gc
 from sklearn.decomposition import PCA, TruncatedSVD
 
 def seed_everything(seed):
