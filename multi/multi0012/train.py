@@ -132,7 +132,11 @@ class DataLoader:
 ## Train Function
 def train_one_epoch(cfg, epoch, train_loader, model, loss_fn, optimizer, scheduler):
     model.train()
+    def get_lr(optimizer):
+        for param_group in optimizer.param_groups:
+            return param_group['lr']
 
+    lr = get_lr(optimizer)
     pbar = tqdm(enumerate(train_loader), total=len(train_loader))
 
     losses = AverageMeter()
@@ -159,13 +163,12 @@ def train_one_epoch(cfg, epoch, train_loader, model, loss_fn, optimizer, schedul
         optimizer.step()
 
         losses.update(loss.item(), bs)
-
         if scheduler:
             scheduler.step()
-
         description = f'TRAIN epoch: {epoch}, loss: {loss.item():.4f}'
         pbar.set_description(description)
-    return {'loss': losses.avg}
+
+    return {'loss': losses.avg, 'lr': lr}
 
 
 ## Valid Function
@@ -233,10 +236,10 @@ def main():
     cfg.latent_input_dim = sweep_config['latent_input_dim']
     cfg.latent_target_dim = sweep_config['latent_target_dim']
 
-    exp_name = Path.cwd().parents[2].name
-    data_dir = Path.cwd().parents[5] / 'data' / 'data'
-    compressed_data_dir = Path.cwd().parents[5] / 'data' / 'compressed_data'
-    save_dir = Path.cwd().parents[5] / 'output' / 'multi' / exp_name
+    exp_name = Path.cwd().name
+    data_dir = Path.cwd().parents[2] / 'data' / 'data'
+    compressed_data_dir = Path.cwd().parents[2] / 'data' / 'compressed_data'
+    save_dir = Path.cwd().parents[2] / 'output' / 'multi' / exp_name
     save_dir.mkdir(exist_ok=True)
 
     # データのロードと整形
@@ -290,8 +293,9 @@ def main():
         if cfg.loss == 'correlation':
             loss_fn = correlation_loss
         
-        if cfg.scheduler == None:
-            scheduler = None
+        if cfg.scheduler == 'OneCycleLR':
+            scheduler = torch.optim.lr_scheduler.OneCycleLR(
+                optimizer, total_steps=cfg.epoch * len(train_loader), max_lr=cfg.lr, pct_start=cfg.pct_start, div_factor=cfg.div_factor, final_div_factor=cfg.final_div_factor)
         else:
             scheduler = None
 

@@ -1,6 +1,6 @@
 seed: 77
 wandb: False
-wandb_project: kaggle_MSCI_multi
+wandb_project: kaggle_MSCI_multi_sweep
 phase: multi
 
 fold: GroupKFold
@@ -10,7 +10,7 @@ use_fold: [0]
 device: 'cuda:0'
 output_size: 23418
 
-n_epochs: 100
+n_epochs: 50
 earlystopping: True
 patience: 5
 
@@ -25,7 +25,7 @@ optimizer: AdamW
 lr: 5e-3
 weight_decay: 1e-2
 
-scheduler: None
+scheduler: OneCycleLR
 T_0: ${n_epochs} # CAWR
 T_mult: 1 # CAWR
 eta_min: 1e-9 # CAWR

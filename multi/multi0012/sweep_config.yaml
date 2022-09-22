@@ -6,11 +6,11 @@ metric:
 parameters:
   hidden1:
     values: [4, 8, 16, 32, 64, 128, 256, 512, 1024]
-  dropout1:
-    values: [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
   hidden2:
     values: [4, 8, 16, 32, 64, 128, 256, 512, 1024]
-  dropout2:
-    values: [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
+  latent_input_dim:
+    values: [4, 8, 16, 32, 64, 128, 256, 512, 1024]
+  latent_target_dim:
+    values: [4, 8, 16, 32, 64, 128, 256, 512, 1024]
   lr:
-    values: [1e-4, 5e-4, 1e-3, 5e-3, 1e-2]
+    values: [1e-4, 5e-4, 1e-3, 5e-3, 1e-2, 5e-2, 1e-1]
