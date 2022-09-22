@@ -301,7 +301,7 @@ def main(cfg: DictConfig):
                 print(f'Early Stop: epoch{epoch}')
                 break
         
-        del model, loss_fn, optimizer, scheduler, train_result, valid_result, train_indices, valid_indices, best_fold_score
+        del model, loss_fn, optimizer, scheduler, train_result, valid_result, train_indices, valid_indices
         wandb.finish()
         gc.collect()
         torch.cuda.empty_cache()
