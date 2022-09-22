@@ -256,9 +256,9 @@ def valid_one_epoch(cfg, epoch, valid_loader, model, pca_train_target_model=None
             input = batch_dict['input'].to(cfg.device)
         if cfg.pca_target:
             # target = batch_dict['target_compressed'].to(cfg.device)
-            target = batch_dict['target'].to_dense()
+            target = batch_dict['target'].to_dense().detach().cpu()
         else:
-            target = batch_dict['target'].to_dense()
+            target = batch_dict['target'].to_dense().detach().cpu()
         bs = input.shape[0]
 
         with torch.no_grad():
@@ -267,7 +267,9 @@ def valid_one_epoch(cfg, epoch, valid_loader, model, pca_train_target_model=None
         if cfg.pca_target:
             pred = pca_train_target_model.inverse_transform(pred.detach().cpu().numpy())
             pred = torch.from_numpy(pred)
-
+        else:
+            pred = pred.detach().cpu()
+        
         pred = (pred - torch.mean(pred, dim=1, keepdim=True)) / (torch.std(pred, dim=1, keepdim=True) + 1e-10)
 
         batch_score = partial_correlation_score_torch_faster(target, pred)
