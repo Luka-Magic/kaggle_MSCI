@@ -126,6 +126,7 @@ class EarlyStopping:
                 print(f'EarlyStopping counter: {self.counter} out of {self.patience}')  #現在のカウンタを表示する 
             if self.counter >= self.patience and self.patience != -1:  #設定カウントを上回ったらストップフラグをTrueに変更
                 self.early_stop = True
+                print(f'BEST SCORE: {self.best_score:.4f}')
         else:  #ベストスコアを更新した場合
             self.best_score = score  #ベストスコアを上書き
             if self.wandb:

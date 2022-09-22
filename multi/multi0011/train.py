@@ -271,11 +271,9 @@ def valid_one_epoch(cfg, epoch, valid_loader, model, pca_train_target_model=None
             pred = pred.detach().cpu()
         
         pred = (pred - torch.mean(pred, dim=1, keepdim=True)) / (torch.std(pred, dim=1, keepdim=True) + 1e-10)
-
         batch_score = partial_correlation_score_torch_faster(target, pred)
         for score in batch_score:
             scores.update(score.item())
-
         loss = -torch.mean(batch_score) # =loss_fnの出力
 
         losses.update(loss.item(), bs)
@@ -333,8 +331,6 @@ def main(cfg: DictConfig):
             
         save_model_path = save_dir / f'{exp_name}_fold{fold}.pth'
 
-        best_fold_score = {'correlation': -1.}
-
         train_indices, valid_indices = fold_list[fold]
 
         train_loader = DataLoader(cfg, data_dict, train_idx=train_indices, batch_size=cfg.train_bs, shuffle=True, drop_last=True)
@@ -377,8 +373,6 @@ def main(cfg: DictConfig):
             if earlystopping.early_stop:
                 print(f'Early Stop: epoch{epoch}')
                 break
-
-        print(f"BEST CORRELATION: {best_fold_score['correlation']}")
         
         del model, loss_fn, optimizer, scheduler, train_result, valid_result, train_indices, valid_indices, best_fold_score
         wandb.finish()
