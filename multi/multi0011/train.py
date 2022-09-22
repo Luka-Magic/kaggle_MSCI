@@ -210,7 +210,6 @@ def train_one_epoch(cfg, epoch, train_loader, model, loss_fn, optimizer, schedul
     losses = AverageMeter()
 
     for step, (batch_dict) in pbar:
-        bs = input.shape[0]
         if cfg.pca_input:
             input = batch_dict['input_compressed'].to(cfg.device)
         else:
@@ -219,6 +218,7 @@ def train_one_epoch(cfg, epoch, train_loader, model, loss_fn, optimizer, schedul
             target = batch_dict['target_compressed'].to(cfg.device)
         else:
             target = batch_dict['target'].to_dense().to(cfg.device)
+        bs = input.shape[0]
 
         optimizer.zero_grad()
 
@@ -250,7 +250,6 @@ def valid_one_epoch(cfg, epoch, valid_loader, model, pca_train_target_model=None
     scores = AverageMeter()
 
     for step, (batch_dict) in pbar:
-        bs = input.shape[0]
         if cfg.pca_input:
             input = batch_dict['input_compressed'].to(cfg.device)
         else:
@@ -260,6 +259,7 @@ def valid_one_epoch(cfg, epoch, valid_loader, model, pca_train_target_model=None
             target = batch_dict['target'].to_dense().to(cfg.device)
         else:
             target = batch_dict['target'].to_dense().to(cfg.device)
+        bs = input.shape[0]
 
         with torch.no_grad():
             pred = model(input)
