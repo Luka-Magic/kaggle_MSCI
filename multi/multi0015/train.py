@@ -330,7 +330,7 @@ def main(cfg: DictConfig):
         #     del train_result, valid_result
         #     gc.collect()
         
-        del model, loss_fn, optimizer, scheduler, train_indices, valid_indices
+        del model, loss_fn, optimizer, scheduler, train_indices, valid_indices, train_loader, valid_loader
         wandb.finish()
         gc.collect()
         torch.cuda.empty_cache()
