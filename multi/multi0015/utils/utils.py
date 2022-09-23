@@ -65,7 +65,7 @@ def load_data(cfg, data_dir, compressed_data_dir):
             with open(compressed_input_train_path, 'rb') as f:
                 train_input_compressed = pickle.load(f)
         else:
-            concat_input = scipy.sparse.load_npz(data_dir / 'concat_{cfg.phase}_inputs_values.sparse.npz')
+            concat_input = scipy.sparse.load_npz(data_dir / f'concat_{cfg.phase}_inputs_values.sparse.npz')
             del train_input, test_input
             gc.collect()
             print('PCA input now...')
