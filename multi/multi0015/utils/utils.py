@@ -53,9 +53,9 @@ def make_coo_batch_slice(torch_csr, start, end, device='cuda:0'):
 def load_data(cfg, data_dir, compressed_data_dir):
     data_dict = {}
     # 訓練データの入力の読み込み
-    compressed_input_train_path = compressed_data_dir / cfg.phase / f'train_{cfg.phase}_input_tsvd{cfg.latent_input_dim}.pkl'
-    compressed_input_test_path = compressed_data_dir / cfg.phase / f'test_{cfg.phase}_input_tsvd{cfg.latent_input_dim}.pkl'
     if cfg.pca_input:
+        compressed_input_train_path = compressed_data_dir / cfg.phase / f'train_{cfg.phase}_input_tsvd{cfg.latent_input_dim}.pkl'
+        compressed_input_test_path = compressed_data_dir / cfg.phase / f'test_{cfg.phase}_input_tsvd{cfg.latent_input_dim}.pkl'
         ## 入力データをpcaする場合 
         ##   PCAモデル・圧縮データ共に既に存在する場合は圧縮データをロード
         ##   そうでない場合は元の入力データをロードし次元削減を行い、PCAモデルと圧縮データを共に保存 (modelはinferで使用するため)
@@ -96,11 +96,10 @@ def load_data(cfg, data_dir, compressed_data_dir):
     gc.collect()
 
     # 訓練データのターゲットの読み込み
-    compressed_target_train_path = compressed_data_dir / cfg.phase / f'train_{cfg.phase}_target_tsvd{cfg.latent_target_dim}.pkl'
-    compressed_target_model_path = compressed_data_dir / cfg.phase / f'train_{cfg.phase}_target_tsvd{cfg.latent_target_dim}_model.pkl'
-    
     train_target = scipy.sparse.load_npz(data_dir / f'train_{cfg.phase}_targets_values.sparse.npz')
     if cfg.pca_target:
+        compressed_target_train_path = compressed_data_dir / cfg.phase / f'train_{cfg.phase}_target_tsvd{cfg.latent_target_dim}.pkl'
+        compressed_target_model_path = compressed_data_dir / cfg.phase / f'train_{cfg.phase}_target_tsvd{cfg.latent_target_dim}_model.pkl'
         ## ターゲットをpcaする場合
         ##   PCAモデル・圧縮データ共に既に存在する場合は圧縮データをロード
         ##   そうでない場合は元のターゲットデータをロードし次元削減を行い、PCAモデルと圧縮データを共に保存
@@ -126,6 +125,37 @@ def load_data(cfg, data_dir, compressed_data_dir):
     del train_target
     gc.collect()
     return data_dict
+
+
+def load_test_data(cfg, data_dir, compressed_data_dir):
+    data_dict = {}
+    # テストデータの入力の読み込み
+    if cfg.pca_input:
+        compressed_input_test_path = compressed_data_dir / cfg.phase / f'test_{cfg.phase}_input_tsvd{cfg.latent_input_dim}.pkl'
+        ## 入力データをpcaする場合 
+        ##   PCAモデル・圧縮データ共に既に存在する場合は圧縮データをロード
+        ##   そうでない場合は元の入力データをロードし次元削減を行い、PCAモデルと圧縮データを共に保存 (modelはinferで使用するため)
+        ##   data_dictに圧縮データだけ加える
+        assert compressed_input_test_path.exists()
+        print('PCA input data already exists, now loading...')
+        with open(compressed_input_test_path, 'rb') as f:
+            test_input_compressed = pickle.load(f)
+        data_dict['test_input_compressed'] = test_input_compressed
+        del test_input_compressed
+        print('PCA input complate')
+    else:
+        # 訓練データの入力の読み込み
+        test_input = scipy.sparse.load_npz(data_dir / 'test_multi_inputs_values.sparse.npz')
+        test_input = load_csr_data_to_gpu(test_input)
+        gc.collect()
+        ## 最大値で割って0-1に正規化
+        max_input = torch.from_numpy(np.load(data_dir / 'train_multi_inputs_max_values.npz')['max_input'])[0].to(cfg.device)
+        test_input.data[...] /= max_input[test_input.indices.long()]
+        data_dict['test_input'] = test_input
+        del test_input, max_input
+    gc.collect()
+    return data_dict
+
 
 class AverageMeter(object):
     """Computes and stores the average and current value"""

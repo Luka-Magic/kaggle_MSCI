@@ -1,4 +1,5 @@
 seed: 77
+test: True
 wandb: True
 wandb_project: kaggle_MSCI_multi
 phase: multi
@@ -17,7 +18,6 @@ train_cite_size: 70988
 test_cite_size: 48663
 input_cite_size: 22050
 target_cite_size: 140
-
 
 n_epochs: 50
 earlystopping: True

@@ -23,7 +23,7 @@ import hydra
 from omegaconf import DictConfig, OmegaConf
 from sklearn.decomposition import PCA, TruncatedSVD
 
-from utils.utils import seed_everything, make_coo_batch, make_coo_batch_slice, AverageMeter, EarlyStopping, load_data
+from utils.utils import seed_everything, make_coo_batch, make_coo_batch_slice, AverageMeter, EarlyStopping, load_data, load_test_data
 from model import MsciModel
 
 ## Loss
@@ -208,6 +208,28 @@ def valid_one_epoch(cfg, epoch, valid_loader, model, pca_train_target_model=None
     
     return {'loss': losses.avg, 'correlation': scores.avg}
 
+## Test Function
+def test_function(cfg, model, test_loader, n_samples, output_size):
+    model.eval()
+    pbar = tqdm(enumerate(test_loader), total=len(test_loader))
+    
+    preds = torch.zeros((n_samples, output_size), device=cfg.device, dtype=torch.float32)
+    
+    start = 0
+    for step, (input, _) in pbar:
+        bs = input.shape[0]
+        input = input.to(cfg.device)
+
+        with torch.no_grad():
+            pred = model(input)
+
+        pred = (pred - torch.mean(pred, dim=1, keepdim=True)) / (torch.std(pred, dim=1, keepdim=True) + 1e-10)
+
+        preds[start:start+bs] = pred
+        start += bs
+    
+    return preds
+
 
 ## main
 @hydra.main(config_path='config', config_name='config')
@@ -308,6 +330,84 @@ def main(cfg: DictConfig):
         torch.cuda.empty_cache()
     
     print('ALL FINISHED')
+
+    if not cfg.test:
+        return
+    
+    data_dict = load_test_data(cfg, data_dir, compressed_data_dir)
+    
+    test_loader = DataLoader(cfg, data_dict, train_target=None, train_idx=None, batch_size=cfg.test_bs, shuffle=False, drop_last=False)
+
+    preds_all = None
+
+    model_num = 0
+    for model_path in save_dir.glob('*.pth'):
+        model = MsciModel(input_size, output_size)
+        model.to(cfg.device)
+
+        model.load_state_dict(torch.load(model_path))
+        preds = test_function(cfg, model, test_loader, n_samples, output_size)
+
+        if preds_all is not None:
+            preds_all += preds
+        else:
+            preds_all = preds
+        del preds, model
+        torch.cuda.empty_cache()
+        gc.collect()
+        model_num += 1
+    preds_all /= float(model_num)
+
+    del test_loader, test_input
+    gc.collect()
+
+    if cfg.phase == 'multi':
+        eval_ids = pd.read_parquet(str(data_dir / 'evaluation.parquet'))
+
+        eval_ids.cell_id = eval_ids.cell_id.astype(pd.CategoricalDtype())
+        eval_ids.gene_id = eval_ids.gene_id.astype(pd.CategoricalDtype())
+
+        sub_df = pd.Series(name='target',
+                            index=pd.multiIndex.from_frame(eval_ids), 
+                            dtype=np.float32)
+
+        y_columns = np.load(data_dir / 'train_multi_targets_idxcol.npz',
+                        allow_pickle=True)["columns"]
+
+        test_index = np.load(data_dir / 'test_multi_inputs_idxcol.npz',
+                            allow_pickle=True)["index"]
+
+        cell_dict = dict((k,v) for v,k in enumerate(test_index)) 
+        assert len(cell_dict)  == len(test_index)
+
+        gene_dict = dict((k,v) for v,k in enumerate(y_columns))
+        assert len(gene_dict) == len(y_columns)
+
+        eval_ids_cell_num = eval_ids.cell_id.apply(lambda x:cell_dict.get(x, -1))
+        eval_ids_gene_num = eval_ids.gene_id.apply(lambda x:gene_dict.get(x, -1))
+
+        valid_multi_rows = (eval_ids_gene_num !=-1) & (eval_ids_cell_num!=-1)
+        valid_multi_rows = valid_multi_rows.to_numpy()
+
+        sub_df.iloc[valid_multi_rows] = preds_all[eval_ids_cell_num[valid_multi_rows].to_numpy(),
+        eval_ids_gene_num[valid_multi_rows].to_numpy()].cpu().numpy()
+
+        del eval_ids_cell_num, eval_ids_gene_num, valid_multi_rows, eval_ids, test_index, y_columns
+        gc.collect()
+
+        sub_df.reset_index(drop=True, inplace=True)
+        sub_df.index.name = 'row_id'
+        sub_df = sub_df.round(6)
+
+        sub_df.to_csv(save_dir / 'submission.csv')
+
+        del preds_all, sub_df
+        gc.collect()
+        torch.cuda.empty_cache()
+
+    print('ALL FINISHED')
+
+
 
 if __name__ == '__main__':
     main()
