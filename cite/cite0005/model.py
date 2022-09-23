@@ -9,11 +9,11 @@ class MsciModel(nn.Module):
         self.mlp = nn.Sequential(
             nn.Linear(input_channel, 64),
             nn.ReLU(),
-            nn.Linear(64, 512),
+            nn.Linear(64, 1024),
             nn.ReLU(),
-            nn.Linear(512, 256),
-            nn.ReLU(), 
-            nn.Linear(256, output_channel),
+            nn.Linear(1024, 1024),
+            nn.ReLU(),
+            nn.Linear(1024, output_channel),
             nn.Softplus()
         )
     

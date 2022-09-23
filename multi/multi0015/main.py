@@ -269,6 +269,9 @@ def main(cfg: DictConfig):
 
     fold_list = create_fold(cfg, data_dir, n_samples)
 
+    if len(cfg.use_fold) == cfg.n_folds:
+        score = []
+
     # foldごとに学習
     for fold in range(cfg.n_folds):
         if fold not in cfg.use_fold:
