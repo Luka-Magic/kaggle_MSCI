@@ -338,7 +338,7 @@ def main(cfg: DictConfig):
     
     data_dict = load_test_data(cfg, data_dir, compressed_data_dir)
     
-    test_loader = DataLoader(cfg, data_dict, train_target=None, train_idx=None, batch_size=cfg.test_bs, shuffle=False, drop_last=False)
+    test_loader = DataLoader(cfg, data_dict, train_idx=None, batch_size=cfg.test_bs, shuffle=False, drop_last=False)
 
     preds_all = None
 
