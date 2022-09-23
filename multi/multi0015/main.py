@@ -307,29 +307,29 @@ def main(cfg: DictConfig):
             scheduler = None
 
         # 学習開始
-        # for epoch in range(cfg.n_epochs):
-        #     train_result = train_one_epoch(cfg, epoch, train_loader, model, loss_fn, optimizer, scheduler)
-        #     valid_result = valid_one_epoch(cfg, epoch, valid_loader, model, pca_train_target_model)
+        for epoch in range(cfg.n_epochs):
+            train_result = train_one_epoch(cfg, epoch, train_loader, model, loss_fn, optimizer, scheduler)
+            valid_result = valid_one_epoch(cfg, epoch, valid_loader, model, pca_train_target_model)
 
-        #     print('='*40)
-        #     print(f"TRAIN {epoch}, loss: {train_result['loss']}")
-        #     print(f"VALID {epoch}, loss: {valid_result['loss']}, score: {valid_result['correlation']}")
-        #     print('='*40)
+            print('='*40)
+            print(f"TRAIN {epoch}, loss: {train_result['loss']}")
+            print(f"VALID {epoch}, loss: {valid_result['loss']}, score: {valid_result['correlation']}")
+            print('='*40)
 
-        #     if cfg.wandb:
-        #         wandb.log(dict(
-        #             epoch = epoch,
-        #             train_loss = train_result['loss'],
-        #             valid_loss = valid_result['loss'],
-        #             correlation = valid_result['correlation']
-        #         ))
+            if cfg.wandb:
+                wandb.log(dict(
+                    epoch = epoch,
+                    train_loss = train_result['loss'],
+                    valid_loss = valid_result['loss'],
+                    correlation = valid_result['correlation']
+                ))
             
-        #     earlystopping(valid_result['correlation'], model)
-        #     if earlystopping.early_stop:
-        #         print(f'Early Stop: epoch{epoch}')
-        #         break
-        #     del train_result, valid_result
-        #     gc.collect()
+            earlystopping(valid_result['correlation'], model)
+            if earlystopping.early_stop:
+                print(f'Early Stop: epoch{epoch}')
+                break
+            del train_result, valid_result
+            gc.collect()
         
         del model, loss_fn, optimizer, scheduler, train_indices, valid_indices, train_loader, valid_loader
         wandb.finish()
@@ -415,10 +415,21 @@ def main(cfg: DictConfig):
         del preds_all, sub_df
         gc.collect()
         torch.cuda.empty_cache()
+    
+    elif cfg.phase == 'cite':
+        test_pred = preds_all.cpu().detach().numpy()
+        sub_df = pd.read_parquet(data_dir / 'sample_submission.parquet')
+        sub_df['target'] = None
+        sub_df.loc[:len(test_pred.ravel())-1, 'target'] = test_pred.ravel()
+        sub_df.set_index('row_id', inplace=True, drop=True)
+        sub_df = sub_df.round(6)
+        sub_df.to_csv(str(save_dir / 'submission.csv'))
 
-    print('ALL FINISHED')
+        del preds_all, test_pred, sub_df
+        gc.collect()
+        torch.cuda.empty_cache()
 
-
+    print('TEST FINISHED')
 
 if __name__ == '__main__':
     main()
