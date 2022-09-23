@@ -80,7 +80,7 @@ def load_data(cfg, data_dir, compressed_data_dir):
                 pickle.dump(test_input_compressed, f)
             
             del test_input_compressed
-        data_dict['train_input_compressed'] = train_input_compressed
+        data_dict['input_compressed'] = train_input_compressed
         del train_input_compressed
         print('PCA input complate')
     else:
@@ -91,7 +91,7 @@ def load_data(cfg, data_dir, compressed_data_dir):
         ## 最大値で割って0-1に正規化
         max_input = torch.from_numpy(np.load(data_dir / f'train_{cfg.phase}_inputs_max_values.npz')['max_input'])[0].to(cfg.device)
         train_input.data[...] /= max_input[train_input.indices.long()]
-        data_dict['train_input'] = train_input
+        data_dict['input'] = train_input
         del train_input, max_input
     gc.collect()
 
@@ -117,11 +117,11 @@ def load_data(cfg, data_dir, compressed_data_dir):
             with open(str(compressed_target_model_path), 'wb') as f:
                 pickle.dump(pca_train_target_model, f)
             del pca_train_target_model
-        data_dict['train_target_compressed'] = train_target_compressed
+        data_dict['target_compressed'] = train_target_compressed
         del train_target_compressed
         print('PCA target complate')
     train_target = load_csr_data_to_gpu(train_target)
-    data_dict['train_target'] = train_target
+    data_dict['target'] = train_target
     del train_target
     gc.collect()
     return data_dict

@@ -64,13 +64,13 @@ class DataLoader:
         self.pca_input = cfg.pca_input
         
         if cfg.pca_input:
-            self.train_inputs = data_dict['train_input_compressed']
+            self.train_inputs = data_dict['input_compressed']
         else:
-            self.train_inputs = data_dict['train_input']
+            self.train_inputs = data_dict['input']
         
         if cfg.pca_target:
-            self.train_target_compressed = data_dict['train_target_compressed']
-        self.train_target = data_dict['train_target']
+            self.train_target_compressed = data_dict['target_compressed']
+        self.train_target = data_dict['target']
 
         self.train_idx = train_idx
         
@@ -302,29 +302,31 @@ def main(cfg: DictConfig):
             scheduler = None
 
         # 学習開始
-        for epoch in range(cfg.n_epochs):
-            train_result = train_one_epoch(cfg, epoch, train_loader, model, loss_fn, optimizer, scheduler)
-            valid_result = valid_one_epoch(cfg, epoch, valid_loader, model, pca_train_target_model)
+        # for epoch in range(cfg.n_epochs):
+        #     train_result = train_one_epoch(cfg, epoch, train_loader, model, loss_fn, optimizer, scheduler)
+        #     valid_result = valid_one_epoch(cfg, epoch, valid_loader, model, pca_train_target_model)
 
-            print('='*40)
-            print(f"TRAIN {epoch}, loss: {train_result['loss']}")
-            print(f"VALID {epoch}, loss: {valid_result['loss']}, score: {valid_result['correlation']}")
-            print('='*40)
+        #     print('='*40)
+        #     print(f"TRAIN {epoch}, loss: {train_result['loss']}")
+        #     print(f"VALID {epoch}, loss: {valid_result['loss']}, score: {valid_result['correlation']}")
+        #     print('='*40)
 
-            if cfg.wandb:
-                wandb.log(dict(
-                    epoch = epoch,
-                    train_loss = train_result['loss'],
-                    valid_loss = valid_result['loss'],
-                    correlation = valid_result['correlation']
-                ))
+        #     if cfg.wandb:
+        #         wandb.log(dict(
+        #             epoch = epoch,
+        #             train_loss = train_result['loss'],
+        #             valid_loss = valid_result['loss'],
+        #             correlation = valid_result['correlation']
+        #         ))
             
-            earlystopping(valid_result['correlation'], model)
-            if earlystopping.early_stop:
-                print(f'Early Stop: epoch{epoch}')
-                break
+        #     earlystopping(valid_result['correlation'], model)
+        #     if earlystopping.early_stop:
+        #         print(f'Early Stop: epoch{epoch}')
+        #         break
+        #     del train_result, valid_result
+        #     gc.collect()
         
-        del model, loss_fn, optimizer, scheduler, train_result, valid_result, train_indices, valid_indices
+        del model, loss_fn, optimizer, scheduler, train_indices, valid_indices
         wandb.finish()
         gc.collect()
         torch.cuda.empty_cache()
