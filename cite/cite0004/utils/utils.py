@@ -73,12 +73,12 @@ def load_data(cfg, data_dir, compressed_data_dir):
     data_dict = {}
     # 訓練データの入力の読み込み
     if cfg.preprocess:
-        train_input = gex_preprocess(cfg, train_input)
         compressed_input_path = compressed_data_dir / f'train_cite_input_tsvd{cfg.latent_input_dim}_seed{cfg.seed}_prepro.pkl'
         compressed_input_model_path = compressed_data_dir / f'train_cite_input_tsvd{cfg.latent_input_dim}_seed{cfg.seed}_prepro_model.pkl'
     else:
         compressed_input_path = compressed_data_dir / f'train_cite_input_tsvd{cfg.latent_input_dim}_seed{cfg.seed}.pkl'
         compressed_input_model_path = compressed_data_dir / f'train_cite_input_tsvd{cfg.latent_input_dim}_seed{cfg.seed}_model.pkl'
+    
     if cfg.pca_input:
         ## 入力データをpcaする場合
         ##   PCAモデル・圧縮データ共に既に存在する場合は圧縮データをロード
@@ -90,6 +90,8 @@ def load_data(cfg, data_dir, compressed_data_dir):
                 train_input_compressed = pickle.load(f)
         else:
             train_input = scipy.sparse.load_npz(data_dir / 'train_cite_inputs_values.sparse.npz')
+            if cfg.preprocess:
+                train_input = gex_preprocess(cfg, train_input)
             print('PCA input now...')
             pca_train_input_model = TruncatedSVD(n_components=cfg.latent_input_dim, random_state=cfg.seed)
             train_input_compressed = pca_train_input_model.fit_transform(train_input)
@@ -104,6 +106,8 @@ def load_data(cfg, data_dir, compressed_data_dir):
     else:
         ## PCAしない場合
         train_input = scipy.sparse.load_npz(data_dir / 'train_cite_inputs_values.sparse.npz')
+        if cfg.preprocess:
+            train_input = gex_preprocess(cfg, train_input)
         train_input = load_csr_data_to_gpu(train_input)
         gc.collect()
         ## 最大値で割って0-1に正規化
