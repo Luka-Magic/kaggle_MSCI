@@ -277,7 +277,7 @@ def main(cfg: DictConfig):
             wandb.config['fold'] = fold
             wandb.config['exp_name'] = exp_name
             wandb.init(project=cfg.wandb_project, entity='luka-magic', name=f'{exp_name}_fold{fold}', config=wandb.config)
-            
+        
         save_model_path = save_dir / f'{exp_name}_fold{fold}.pth'
 
         train_indices, valid_indices = fold_list[fold]
@@ -331,7 +331,7 @@ def main(cfg: DictConfig):
         gc.collect()
         torch.cuda.empty_cache()
     
-    print('ALL FINISHED')
+    print('TRAIN FINISHED')
 
     if not cfg.test:
         return

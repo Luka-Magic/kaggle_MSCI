@@ -140,7 +140,7 @@ def load_test_data(cfg, data_dir, compressed_data_dir):
         print('PCA input data already exists, now loading...')
         with open(compressed_input_test_path, 'rb') as f:
             test_input_compressed = pickle.load(f)
-        data_dict['test_input_compressed'] = test_input_compressed
+        data_dict['input_compressed'] = test_input_compressed
         del test_input_compressed
         print('PCA input complate')
     else:
@@ -151,7 +151,7 @@ def load_test_data(cfg, data_dir, compressed_data_dir):
         ## 最大値で割って0-1に正規化
         max_input = torch.from_numpy(np.load(data_dir / 'train_multi_inputs_max_values.npz')['max_input'])[0].to(cfg.device)
         test_input.data[...] /= max_input[test_input.indices.long()]
-        data_dict['test_input'] = test_input
+        data_dict['input'] = test_input
         del test_input, max_input
     gc.collect()
     return data_dict
