@@ -1,6 +1,6 @@
 seed: 77
 test: True
-wandb: False
+wandb: True
 wandb_project: kaggle_MSCI_multi
 phase: multi
 
