@@ -21,7 +21,6 @@ from sklearn.model_selection import train_test_split, KFold, GroupKFold, Stratif
 import sklearn.preprocessing
 import hydra
 from omegaconf import DictConfig, OmegaConf
-from sklearn.decomposition import PCA, TruncatedSVD
 
 from utils.utils import seed_everything, make_coo_batch, make_coo_batch_slice, AverageMeter, EarlyStopping, load_data
 from model import MsciModel
@@ -263,6 +262,8 @@ def main():
 
     fold_list = create_fold(cfg, data_dir, n_samples)
 
+    best_correlation = -1.
+    
     # foldごとに学習
     for fold in range(cfg.n_folds):
         if fold not in cfg.use_fold:
@@ -310,20 +311,22 @@ def main():
             # print(f"VALID {epoch}, loss: {valid_result['loss']}, score: {valid_result['correlation']}")
             # print('='*40)
 
-            wandb.log({'correlation': valid_result['correlation']})
-
-            # if cfg.wandb:
-            #     wandb.log(dict(
-            #         epoch = epoch,
-            #         train_loss = train_result['loss'],
-            #         valid_loss = valid_result['loss'],
-            #         correlation = valid_result['correlation']
-            #     ))
+            wandb.log({
+                'epoch': epoch,
+                'correlation': valid_result['correlation'],
+                'train_loss': train_result['loss'],
+                'valid_loss': valid_result['loss'],
+                'lr': train_result['lr']
+                })
             
             earlystopping(valid_result['correlation'], model)
             if earlystopping.early_stop:
                 print(f'Early Stop: epoch{epoch}')
                 break
+
+            best_correlation = max(best_correlation, valid_result['correlation'])
+        
+        wandb.log({'best_correlation': best_correlation})
         
         del model, loss_fn, optimizer, scheduler, train_result, valid_result, train_indices, valid_indices
         wandb.finish()
