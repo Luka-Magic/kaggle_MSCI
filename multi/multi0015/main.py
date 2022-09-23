@@ -269,8 +269,7 @@ def main(cfg: DictConfig):
 
     fold_list = create_fold(cfg, data_dir, n_samples)
 
-    if len(cfg.use_fold) == cfg.n_folds:
-        score = []
+    score = [len(valid_list) for _, valid_list in fold_list]
 
     # foldごとに学習
     for fold in range(cfg.n_folds):
@@ -334,11 +333,17 @@ def main(cfg: DictConfig):
             del train_result, valid_result
             gc.collect()
         
-        del model, loss_fn, optimizer, scheduler, train_indices, valid_indices, train_loader, valid_loader
+        score[fold] *= earlystopping.best_score
+
+        del model, loss_fn, optimizer, scheduler, train_indices, valid_indices, train_loader, valid_loader, earlystopping
         wandb.finish()
         gc.collect()
         torch.cuda.empty_cache()
     
+    if len(cfg.use_fold) == cfg.n_folds:
+        score = sum(score) / n_samples
+        print(f'FINAL VALID SCORE: {score}')
+
     del data_dict, fold_list, pca_train_target_model
     gc.collect()
     torch.cuda.empty_cache()
