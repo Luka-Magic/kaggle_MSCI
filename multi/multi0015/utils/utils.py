@@ -153,6 +153,8 @@ def load_test_data(cfg, data_dir, compressed_data_dir):
         test_input.data[...] /= max_input[test_input.indices.long()]
         data_dict['input'] = test_input
         del test_input, max_input
+    
+    data_dict['target'] = None
     gc.collect()
     return data_dict
 
