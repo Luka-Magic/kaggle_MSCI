@@ -379,7 +379,7 @@ def main(cfg: DictConfig):
         eval_ids.gene_id = eval_ids.gene_id.astype(pd.CategoricalDtype())
 
         sub_df = pd.Series(name='target',
-                            index=pd.multiIndex.from_frame(eval_ids), 
+                            index=pd.MultiIndex.from_frame(eval_ids), 
                             dtype=np.float32)
 
         y_columns = np.load(data_dir / 'train_multi_targets_idxcol.npz',
