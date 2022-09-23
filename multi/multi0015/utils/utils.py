@@ -66,8 +66,6 @@ def load_data(cfg, data_dir, compressed_data_dir):
                 train_input_compressed = pickle.load(f)
         else:
             concat_input = scipy.sparse.load_npz(data_dir / f'concat_{cfg.phase}_inputs_values.sparse.npz')
-            del train_input, test_input
-            gc.collect()
             print('PCA input now...')
             pca_input_model = TruncatedSVD(n_components=cfg.latent_input_dim, random_state=cfg.seed)
             concat_input_compressed = pca_input_model.fit_transform(concat_input)
