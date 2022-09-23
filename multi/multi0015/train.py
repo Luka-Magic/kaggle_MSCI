@@ -362,14 +362,14 @@ def main(cfg: DictConfig):
 
         model.load_state_dict(torch.load(model_path))
         preds_all = test_function(cfg, model, test_loader, n_samples, output_size, preds_all)
-        
+
         del model
         torch.cuda.empty_cache()
         gc.collect()
         model_num += 1
     preds_all /= float(model_num)
 
-    del test_loader, test_input
+    del test_loader
     gc.collect()
 
     if cfg.phase == 'multi':
