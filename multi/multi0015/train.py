@@ -216,10 +216,15 @@ def test_function(cfg, model, test_loader, n_samples, output_size):
     preds = torch.zeros((n_samples, output_size), device=cfg.device, dtype=torch.float32)
     
     start = 0
-    for step, (input, _) in pbar:
+    for step, (batch_dict) in pbar:
         bs = input.shape[0]
         input = input.to(cfg.device)
 
+        if cfg.pca_input:
+            input = batch_dict['input_compressed'].to(cfg.device)
+        else:
+            input = batch_dict['input'].to(cfg.device)
+        
         with torch.no_grad():
             pred = model(input)
 
