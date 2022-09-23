@@ -288,7 +288,10 @@ def main(cfg: DictConfig):
 
         train_loader = DataLoader(cfg, data_dict, train_idx=train_indices, batch_size=cfg.train_bs, shuffle=True, drop_last=True)
         valid_loader = DataLoader(cfg, data_dict, train_idx=valid_indices, batch_size=cfg.valid_bs, shuffle=True, drop_last=False)
-
+        del data_dict
+        gc.collect()
+        torch.cuda.empty_cache()
+        
         earlystopping = EarlyStopping(cfg, save_model_path)
 
         model = MsciModel(input_size, output_size).to(cfg.device)
@@ -343,6 +346,10 @@ def main(cfg: DictConfig):
     data_dict = load_test_data(cfg, data_dir, compressed_data_dir)
     
     test_loader = DataLoader(cfg, data_dict, train_idx=None, batch_size=cfg.test_bs, shuffle=False, drop_last=False)
+
+    del data_dict
+    gc.collect()
+    torch.cuda.empty_cache()
 
     preds_all = None
 

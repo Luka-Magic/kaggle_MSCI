@@ -124,6 +124,7 @@ def load_data(cfg, data_dir, compressed_data_dir):
     data_dict['target'] = train_target
     del train_target
     gc.collect()
+    torch.cuda.empty_cache()
     return data_dict
 
 
@@ -156,6 +157,7 @@ def load_test_data(cfg, data_dir, compressed_data_dir):
     
     data_dict['target'] = None
     gc.collect()
+    torch.cuda.empty_cache()
     return data_dict
 
 
