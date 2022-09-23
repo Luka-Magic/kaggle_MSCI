@@ -209,11 +209,12 @@ def valid_one_epoch(cfg, epoch, valid_loader, model, pca_train_target_model=None
     return {'loss': losses.avg, 'correlation': scores.avg}
 
 ## Test Function
-def test_function(cfg, model, test_loader, n_samples, output_size):
+def test_function(cfg, model, test_loader, n_samples, output_size, preds):
     model.eval()
     pbar = tqdm(enumerate(test_loader), total=len(test_loader))
     
-    preds = torch.zeros((n_samples, output_size), device=cfg.device, dtype=torch.float32)
+    if preds is None:
+        preds = torch.zeros((n_samples, output_size), device=cfg.device, dtype=torch.float32)
     
     start = 0
     for step, (batch_dict) in pbar:
@@ -335,7 +336,7 @@ def main(cfg: DictConfig):
         gc.collect()
         torch.cuda.empty_cache()
     
-    del data_dict, fold_list
+    del data_dict, fold_list, pca_train_target_model
     gc.collect()
     torch.cuda.empty_cache()
 
@@ -360,13 +361,9 @@ def main(cfg: DictConfig):
         model.to(cfg.device)
 
         model.load_state_dict(torch.load(model_path))
-        preds = test_function(cfg, model, test_loader, n_samples, output_size)
-
-        if preds_all is not None:
-            preds_all += preds
-        else:
-            preds_all = preds
-        del preds, model
+        preds_all = test_function(cfg, model, test_loader, n_samples, output_size, preds_all)
+        
+        del model
         torch.cuda.empty_cache()
         gc.collect()
         model_num += 1
