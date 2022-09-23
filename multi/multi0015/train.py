@@ -225,7 +225,7 @@ def main(cfg: DictConfig):
     # データのロードと整形
     data_dict = load_data(cfg, data_dir, compressed_data_dir)
     if cfg.pca_target:
-        compressed_target_model_path = compressed_data_dir / f'train_multi_target_tsvd{cfg.latent_input_dim}_seed{cfg.seed}_model.pkl'
+        compressed_target_model_path = compressed_data_dir / cfg.phase / f'train_multi_target_tsvd{cfg.latent_target_dim}_model.pkl'
         with open(compressed_target_model_path, 'rb') as f:
             pca_train_target_model = pickle.load(f)
     else:
