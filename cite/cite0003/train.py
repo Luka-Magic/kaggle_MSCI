@@ -261,6 +261,8 @@ def main():
         output_size = cfg.latent_target_dim
 
     fold_list = create_fold(cfg, data_dir, n_samples)
+    
+    best_correlation = -1.
 
     # foldごとに学習
     for fold in range(cfg.n_folds):
@@ -309,21 +311,23 @@ def main():
             # print(f"VALID {epoch}, loss: {valid_result['loss']}, score: {valid_result['correlation']}")
             # print('='*40)
 
-            wandb.log({'correlation': valid_result['correlation']})
-
-            # if cfg.wandb:
-            #     wandb.log(dict(
-            #         epoch = epoch,
-            #         train_loss = train_result['loss'],
-            #         valid_loss = valid_result['loss'],
-            #         correlation = valid_result['correlation']
-            #     ))
+            wandb.log({
+                'epoch': epoch,
+                'correlation': valid_result['correlation'],
+                'train_loss': train_result['loss'],
+                'valid_loss': valid_result['loss'],
+                'lr': train_result['lr']
+                })
             
             earlystopping(valid_result['correlation'], model)
             if earlystopping.early_stop:
                 print(f'Early Stop: epoch{epoch}')
                 break
+                
+            best_correlation = max(best_correlation, valid_result['correlation'])
         
+        wandb.log({'best_correlation': best_correlation})
+
         del model, loss_fn, optimizer, scheduler, train_result, valid_result, train_indices, valid_indices
         wandb.finish()
         gc.collect()
