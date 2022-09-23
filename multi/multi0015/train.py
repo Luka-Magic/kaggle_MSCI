@@ -286,13 +286,8 @@ def main(cfg: DictConfig):
 
         train_indices, valid_indices = fold_list[fold]
 
-        print(data_dict)
         train_loader = DataLoader(cfg, data_dict, train_idx=train_indices, batch_size=cfg.train_bs, shuffle=True, drop_last=True)
         valid_loader = DataLoader(cfg, data_dict, train_idx=valid_indices, batch_size=cfg.valid_bs, shuffle=True, drop_last=False)
-        
-        del data_dict
-        gc.collect()
-        torch.cuda.empty_cache()
 
         earlystopping = EarlyStopping(cfg, save_model_path)
 
@@ -340,6 +335,10 @@ def main(cfg: DictConfig):
         gc.collect()
         torch.cuda.empty_cache()
     
+    del data_dict, fold_list
+    gc.collect()
+    torch.cuda.empty_cache()
+
     print('TRAIN FINISHED')
 
     if not cfg.test:
