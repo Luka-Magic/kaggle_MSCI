@@ -252,13 +252,13 @@ def main(cfg: DictConfig):
             pca_train_target_model = pickle.load(f)
     else:
         pca_train_target_model = None
-    n_samples = data_dict['train_target'].shape[0]
+    n_samples = data_dict['target'].shape[0]
     if not cfg.pca_input:
-        input_size = data_dict['train_input'].shape[1]
+        input_size = data_dict['input'].shape[1]
     else:
         input_size = cfg.latent_input_dim
     if not cfg.pca_target:
-        output_size = data_dict['train_target'].shape[1]
+        output_size = data_dict['target'].shape[1]
     else:
         output_size = cfg.latent_target_dim
 
