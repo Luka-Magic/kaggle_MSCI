@@ -28,11 +28,11 @@ from model import MsciModel
 ## Dataset
 def load_data(data_dir, device):
     # 訓練データの入力の読み込み
-    test_input = scipy.sparse.load_npz(data_dir / 'test_multi_inputs_values.sparse.npz')
+    test_input = scipy.sparse.load_npz(data_dir / 'test_cite_inputs_values.sparse.npz')
     test_input = load_csr_data_to_gpu(test_input)
     gc.collect()
     ## 最大値で割って0-1に正規化
-    max_input = torch.from_numpy(np.load(data_dir / 'train_multi_inputs_max_values.npz')['max_input'])[0].to(device)
+    max_input = torch.from_numpy(np.load(data_dir / 'train_cite_inputs_max_values.npz')['max_input'])[0].to(device)
     test_input.data[...] /= max_input[test_input.indices.long()]
     del max_input
     gc.collect()
@@ -125,7 +125,7 @@ def main(cfg: DictConfig):
     # 初期設定    
     exp_name = Path.cwd().parents[2].name
     data_dir = Path.cwd().parents[5] / 'data' / 'data'
-    save_dir = Path.cwd().parents[5] / 'output' / 'multi' / exp_name
+    save_dir = Path.cwd().parents[5] / 'output' / 'cite' / exp_name
     save_dir.mkdir(exist_ok=True)
     
     # データのロードと整形
@@ -165,13 +165,13 @@ def main(cfg: DictConfig):
     eval_ids.gene_id = eval_ids.gene_id.astype(pd.CategoricalDtype())
 
     sub_df = pd.Series(name='target',
-                        index=pd.multiIndex.from_frame(eval_ids), 
+                        index=pd.citeIndex.from_frame(eval_ids), 
                         dtype=np.float32)
 
-    y_columns = np.load(data_dir / 'train_multi_targets_idxcol.npz',
+    y_columns = np.load(data_dir / 'train_cite_targets_idxcol.npz',
                     allow_pickle=True)["columns"]
 
-    test_index = np.load(data_dir / 'test_multi_inputs_idxcol.npz',
+    test_index = np.load(data_dir / 'test_cite_inputs_idxcol.npz',
                         allow_pickle=True)["index"]
 
     cell_dict = dict((k,v) for v,k in enumerate(test_index)) 
@@ -183,14 +183,14 @@ def main(cfg: DictConfig):
     eval_ids_cell_num = eval_ids.cell_id.apply(lambda x:cell_dict.get(x, -1))
     eval_ids_gene_num = eval_ids.gene_id.apply(lambda x:gene_dict.get(x, -1))
 
-    valid_multi_rows = (eval_ids_gene_num !=-1) & (eval_ids_cell_num!=-1)
+    valid_cite_rows = (eval_ids_gene_num !=-1) & (eval_ids_cell_num!=-1)
 
-    valid_multi_rows = valid_multi_rows.to_numpy()
+    valid_cite_rows = valid_cite_rows.to_numpy()
 
-    sub_df.iloc[valid_multi_rows] = preds_all[eval_ids_cell_num[valid_multi_rows].to_numpy(),
-    eval_ids_gene_num[valid_multi_rows].to_numpy()].cpu().numpy()
+    sub_df.iloc[valid_cite_rows] = preds_all[eval_ids_cell_num[valid_cite_rows].to_numpy(),
+    eval_ids_gene_num[valid_cite_rows].to_numpy()].cpu().numpy()
 
-    del eval_ids_cell_num, eval_ids_gene_num, valid_multi_rows, eval_ids, test_index, y_columns
+    del eval_ids_cell_num, eval_ids_gene_num, valid_cite_rows, eval_ids, test_index, y_columns
     gc.collect()
 
     sub_df.reset_index(drop=True, inplace=True)
