@@ -8,7 +8,16 @@ group: donor
 n_folds: 3
 use_fold: [0, 1, 2]
 device: 'cuda:0'
-output_size: 23418
+
+train_multi_size: 105942
+test_multi_size: 55935
+input_multi_size: 228942
+target_multi_size: 23418
+train_cite_size: 70988
+test_cite_size: 48663
+input_cite_size: 22050
+target_cite_size: 140
+
 
 n_epochs: 50
 earlystopping: True

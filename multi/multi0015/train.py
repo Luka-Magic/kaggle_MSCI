@@ -41,7 +41,7 @@ def correlation_loss(pred, tgt):
 
 def create_fold(cfg, data_dir, n_samples):
     if cfg.fold == 'GroupKFold':
-        train_idx = np.load(data_dir / 'train_multi_inputs_idxcol.npz', allow_pickle=True)['index']
+        train_idx = np.load(data_dir / f'train_{cfg.phase}_inputs_idxcol.npz', allow_pickle=True)['index']
         train_meta = pd.read_parquet(data_dir / 'metadata.parquet')
         train_meta = train_meta.query('cell_id in @train_idx').reset_index(drop=True)
         kfold = GroupKFold(n_splits=cfg.n_folds)
@@ -219,13 +219,13 @@ def main(cfg: DictConfig):
     exp_name = Path.cwd().parents[2].name
     data_dir = Path.cwd().parents[5] / 'data' / 'data'
     compressed_data_dir = Path.cwd().parents[5] / 'data' / 'compressed_data'
-    save_dir = Path.cwd().parents[5] / 'output' / 'multi' / exp_name
+    save_dir = Path.cwd().parents[5] / 'output' / cfg.phase / exp_name
     save_dir.mkdir(exist_ok=True)
 
     # データのロードと整形
     data_dict = load_data(cfg, data_dir, compressed_data_dir)
     if cfg.pca_target:
-        compressed_target_model_path = compressed_data_dir / cfg.phase / f'train_multi_target_tsvd{cfg.latent_target_dim}_model.pkl'
+        compressed_target_model_path = compressed_data_dir / cfg.phase / f'train_{cfg.phase}_target_tsvd{cfg.latent_target_dim}_model.pkl'
         with open(compressed_target_model_path, 'rb') as f:
             pca_train_target_model = pickle.load(f)
     else:

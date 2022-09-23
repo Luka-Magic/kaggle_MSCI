@@ -53,8 +53,8 @@ def make_coo_batch_slice(torch_csr, start, end, device='cuda:0'):
 def load_data(cfg, data_dir, compressed_data_dir):
     data_dict = {}
     # 訓練データの入力の読み込み
-    compressed_input_train_path = compressed_data_dir / cfg.phase / f'train_multi_input_tsvd{cfg.latent_input_dim}.pkl'
-    compressed_input_test_path = compressed_data_dir / cfg.phase / f'test_multi_input_tsvd{cfg.latent_input_dim}.pkl'
+    compressed_input_train_path = compressed_data_dir / cfg.phase / f'train_{cfg.phase}_input_tsvd{cfg.latent_input_dim}.pkl'
+    compressed_input_test_path = compressed_data_dir / cfg.phase / f'test_{cfg.phase}_input_tsvd{cfg.latent_input_dim}.pkl'
     if cfg.pca_input:
         ## 入力データをpcaする場合 
         ##   PCAモデル・圧縮データ共に既に存在する場合は圧縮データをロード
@@ -65,19 +65,15 @@ def load_data(cfg, data_dir, compressed_data_dir):
             with open(compressed_input_train_path, 'rb') as f:
                 train_input_compressed = pickle.load(f)
         else:
-            train_input = scipy.sparse.load_npz(data_dir / 'train_multi_inputs_values.sparse.npz')
-            test_input = scipy.sparse.load_npz(data_dir / 'test_multi_inputs_values.sparse.npz')
-            train_size, test_size = train_input.shape[0], test_input.shape[1]
-            concat_input = scipy.sparse.vstack(train_input, test_input)
+            concat_input = scipy.sparse.load_npz(data_dir / 'concat_{cfg.phase}_inputs_values.sparse.npz')
             del train_input, test_input
             gc.collect()
-
             print('PCA input now...')
             pca_input_model = TruncatedSVD(n_components=cfg.latent_input_dim, random_state=cfg.seed)
             concat_input_compressed = pca_input_model.fit_transform(concat_input)
             del concat_input, pca_input_model
             gc.collect()
-
+            train_size = cfg.train_multi_size if cfg.phase == 'multi' else cfg.train_cite_size
             train_input_compressed = concat_input_compressed[:train_size]
             test_input_compressed = concat_input_compressed[train_size:]
             with open(str(compressed_input_train_path), 'wb') as f:
@@ -91,21 +87,21 @@ def load_data(cfg, data_dir, compressed_data_dir):
         print('PCA input complate')
     else:
         ## PCAしない場合
-        train_input = scipy.sparse.load_npz(data_dir / 'train_multi_inputs_values.sparse.npz')
+        train_input = scipy.sparse.load_npz(data_dir / f'train_{cfg.phase}_inputs_values.sparse.npz')
         train_input = load_csr_data_to_gpu(train_input)
         gc.collect()
         ## 最大値で割って0-1に正規化
-        max_input = torch.from_numpy(np.load(data_dir / 'train_multi_inputs_max_values.npz')['max_input'])[0].to(cfg.device)
+        max_input = torch.from_numpy(np.load(data_dir / f'train_{cfg.phase}_inputs_max_values.npz')['max_input'])[0].to(cfg.device)
         train_input.data[...] /= max_input[train_input.indices.long()]
         data_dict['train_input'] = train_input
         del train_input, max_input
     gc.collect()
 
     # 訓練データのターゲットの読み込み
-    compressed_target_train_path = compressed_data_dir / cfg.phase / f'train_multi_target_tsvd{cfg.latent_target_dim}.pkl'
-    compressed_target_model_path = compressed_data_dir / cfg.phase / f'train_multi_target_tsvd{cfg.latent_target_dim}_model.pkl'
+    compressed_target_train_path = compressed_data_dir / cfg.phase / f'train_{cfg.phase}_target_tsvd{cfg.latent_target_dim}.pkl'
+    compressed_target_model_path = compressed_data_dir / cfg.phase / f'train_{cfg.phase}_target_tsvd{cfg.latent_target_dim}_model.pkl'
     
-    train_target = scipy.sparse.load_npz(data_dir / 'train_multi_targets_values.sparse.npz')
+    train_target = scipy.sparse.load_npz(data_dir / f'train_{cfg.phase}_targets_values.sparse.npz')
     if cfg.pca_target:
         ## ターゲットをpcaする場合
         ##   PCAモデル・圧縮データ共に既に存在する場合は圧縮データをロード
