@@ -293,6 +293,7 @@ def main():
         if cfg.optimizer == 'AdamW':
             optimizer = torch.optim.AdamW(model.parameters(), lr=cfg.lr, weight_decay=cfg.weight_decay)
         
+        
         if cfg.loss == 'correlation':
             loss_fn = correlation_loss
         
