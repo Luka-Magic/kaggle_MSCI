@@ -216,6 +216,7 @@ hyperparameter_defaults = dict(
     hidden1 = 8,
     hidden2 = 8,
     hidden3 = 8,
+    hidden4 = 8,
     latent_input_dim = 8,
     lr = -3
 )
