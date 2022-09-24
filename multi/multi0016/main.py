@@ -157,14 +157,14 @@ def train_one_epoch(cfg, epoch, train_loader, model, loss_fn, optimizer, schedul
         if cfg.pca_input:
             with autocast():
                 pred = model(input)
-                pred = (pred - torch.mean(pred, dim=1, keepdim=True)) / (torch.std(pred, dim=1, keepdim=True) + 1e-10)
+                # pred = (pred - torch.mean(pred, dim=1, keepdim=True)) / (torch.std(pred, dim=1, keepdim=True) + 1e-10)
                 loss = loss_fn(pred, target)
             scaler.scale(loss).backward()
             scaler.step(optimizer)
             scaler.update()
         else:
             pred = model(input)
-            pred = (pred - torch.mean(pred, dim=1, keepdim=True)) / (torch.std(pred, dim=1, keepdim=True) + 1e-10)
+            # pred = (pred - torch.mean(pred, dim=1, keepdim=True)) / (torch.std(pred, dim=1, keepdim=True) + 1e-10)
             loss = loss_fn(pred, target)
             loss.backward()
         optimizer.step()
@@ -206,7 +206,7 @@ def valid_one_epoch(cfg, epoch, valid_loader, model, pca_train_target_model=None
             pred = pca_train_target_model.inverse_transform(pred.detach().cpu().numpy())
             pred = torch.from_numpy(pred).to(cfg.device)
         
-        pred = (pred - torch.mean(pred, dim=1, keepdim=True)) / (torch.std(pred, dim=1, keepdim=True) + 1e-10)
+        # pred = (pred - torch.mean(pred, dim=1, keepdim=True)) / (torch.std(pred, dim=1, keepdim=True) + 1e-10)
         batch_score = partial_correlation_score_torch_faster(target, pred)
         for score in batch_score:
             scores.update(score.item())
