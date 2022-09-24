@@ -264,7 +264,7 @@ def main():
 
     fold_list = create_fold(cfg, data_dir, n_samples)
 
-    best_correlation = -1.
+    score = [len(valid_list) for _, valid_list in fold_list]
     
     # foldごとに学習
     for fold in range(cfg.n_folds):
@@ -326,16 +326,18 @@ def main():
             if earlystopping.early_stop:
                 print(f'Early Stop: epoch{epoch}')
                 break
-
-            best_correlation = max(best_correlation, valid_result['correlation'])
+            del train_result, valid_result
+            gc.collect()
         
-        wandb.log({'best_correlation': best_correlation})
+        score[fold] *= earlystopping.best_score
         
-        del model, loss_fn, optimizer, scheduler, train_result, valid_result, train_indices, valid_indices
+        del model, loss_fn, optimizer, scheduler, train_indices, valid_indices, train_loader, valid_loader, earlystopping
         wandb.finish()
         gc.collect()
         torch.cuda.empty_cache()
-    
+    score = sum(score) / n_samples
+    wandb.log({'best_correlation': score})
+    print(f'FINAL VALID SCORE: {score}')
     print('ALL FINISHED')
 
 if __name__ == '__main__':
