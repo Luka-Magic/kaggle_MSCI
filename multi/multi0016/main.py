@@ -235,7 +235,7 @@ def main():
     
     cfg.latent_input_dim = int(2**sweep_config['latent_input_dim'])
     cfg.lr = 10**sweep_config['lr']
-    print(f'model params: [{int(2**cfg.hidden1)}, {int(2**cfg.hidden2)}, {int(2**cfg.hidden3)}, {int(2**cfg.hidden4)}]')
+    print(f'model params: [{int(2**sweep_config.hidden1)}, {int(2**sweep_config.hidden2)}, {int(2**sweep_config.hidden3)}, {int(2**sweep_config.hidden4)}]')
 
     exp_name = Path.cwd().name
     data_dir = Path.cwd().parents[2] / 'data' / 'data'
