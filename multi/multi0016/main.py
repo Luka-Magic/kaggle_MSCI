@@ -323,13 +323,13 @@ def main():
             # print(f"VALID {epoch}, loss: {valid_result['loss']}, score: {valid_result['correlation']}")
             # print('='*40)
 
-            wandb.log({
-                'epoch': epoch,
-                'correlation': valid_result['correlation'],
-                'train_loss': train_result['loss'],
-                'valid_loss': valid_result['loss'],
-                'lr': train_result['lr']
-                })
+            # wandb.log({
+            #     'epoch': epoch,
+            #     'correlation': valid_result['correlation'],
+            #     'train_loss': train_result['loss'],
+            #     'valid_loss': valid_result['loss'],
+            #     'lr': train_result['lr']
+            #     })
             
             earlystopping(valid_result['correlation'], model)
             if earlystopping.early_stop:
@@ -341,13 +341,13 @@ def main():
         score[fold] *= earlystopping.best_score
         
         del model, loss_fn, optimizer, scheduler, train_indices, valid_indices, train_loader, valid_loader, earlystopping
-        wandb.finish()
         gc.collect()
         torch.cuda.empty_cache()
     score = sum(score) / n_samples
     wandb.log({'best_correlation': score})
     print(f'FINAL VALID SCORE: {score}')
     print('ALL FINISHED')
+    wandb.finish()
 
 if __name__ == '__main__':
     main()
