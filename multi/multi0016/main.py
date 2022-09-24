@@ -154,7 +154,7 @@ def train_one_epoch(cfg, epoch, train_loader, model, loss_fn, optimizer, schedul
 
         optimizer.zero_grad()
 
-        if cfg.pca_train:
+        if cfg.pca_input:
             with autocast:
                 pred = model(input)
                 pred = (pred - torch.mean(pred, dim=1, keepdim=True)) / (torch.std(pred, dim=1, keepdim=True) + 1e-10)
