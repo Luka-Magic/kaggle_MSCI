@@ -21,8 +21,8 @@ n_epochs: 100
 earlystopping: True
 patience: 5
 
-pca_input: tsvd
-latent_input_dim: 64
+pca_input: umap
+latent_input_dim: 32
 pca_target: #None
 latent_target_dim: 64
 

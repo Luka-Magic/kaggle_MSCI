@@ -129,7 +129,7 @@ class DataLoader:
         return self.nb_batches
 
 ## Train Function
-def train_one_epoch(cfg, epoch, train_loader, model, loss_fn, optimizer, scheduler, scaler):
+def train_one_epoch(cfg, epoch, train_loader, model, loss_fn, optimizer, scheduler):
     model.train()
     def get_lr(optimizer):
         for param_group in optimizer.param_groups:
@@ -153,17 +153,7 @@ def train_one_epoch(cfg, epoch, train_loader, model, loss_fn, optimizer, schedul
 
         optimizer.zero_grad()
 
-        # if cfg.pca_input:
-            # with autocast():
-            #     pred = model(input)
-            #     # pred = (pred - torch.mean(pred, dim=1, keepdim=True)) / (torch.std(pred, dim=1, keepdim=True) + 1e-10)
-            #     loss = loss_fn(pred, target)
-            # scaler.scale(loss).backward()
-            # scaler.step(optimizer)
-            # scaler.update()
-        # else:
         pred = model(input)
-            # pred = (pred - torch.mean(pred, dim=1, keepdim=True)) / (torch.std(pred, dim=1, keepdim=True) + 1e-10)
         loss = loss_fn(pred, target)
         loss.backward()
         optimizer.step()
@@ -241,7 +231,7 @@ def main():
     
     # cfg.latent_input_dim = int(2**sweep_config['latent_input_dim'])
     # cfg.lr = 10**sweep_config['lr']
-    print(f'model params: [{int(2**sweep_config.hidden1)}, {int(2**sweep_config.hidden2)}, {int(2**sweep_config.hidden3)}, {int(2**sweep_config.hidden4)}]')
+    print(f'model params: [{int(2**sweep_config.hidden1)}, {int(2**sweep_config.hidden2)}, {int(2**sweep_config.hidden3)}]')
 
     exp_name = Path.cwd().name
     data_dir = Path.cwd().parents[2] / 'data' / 'data'
@@ -310,11 +300,9 @@ def main():
         else:
             scheduler = None
 
-        scaler = GradScaler()
-
         # 学習開始
         for epoch in range(cfg.n_epochs):
-            train_result = train_one_epoch(cfg, epoch, train_loader, model, loss_fn, optimizer, scheduler, scaler)
+            train_result = train_one_epoch(cfg, epoch, train_loader, model, loss_fn, optimizer, scheduler)
             valid_result = valid_one_epoch(cfg, epoch, valid_loader, model, pca_train_target_model)
 
             # print('='*40)

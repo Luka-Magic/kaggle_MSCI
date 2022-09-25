@@ -19,6 +19,7 @@ class MsciModel(nn.Module):
             nn.Linear(int(2**cfg.hidden4), output_channel),
             nn.Softplus()
         )
+
     
     def forward(self, x):
         return self.mlp(x)
