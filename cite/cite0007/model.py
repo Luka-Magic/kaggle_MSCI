@@ -14,9 +14,7 @@ class MsciModel(nn.Module):
             nn.ReLU(),            
             nn.Linear(int(2**cfg.hidden2), int(2**cfg.hidden3)),
             nn.ReLU(),
-            nn.Linear(int(2**cfg.hidden3), int(2**cfg.hidden4)),
-            nn.ReLU(),            
-            nn.Linear(int(2**cfg.hidden4), output_channel),
+            nn.Linear(int(2**cfg.hidden3), output_channel),
             nn.Softplus()
         )
     
