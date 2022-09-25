@@ -184,7 +184,6 @@ class EarlyStopping:
         self.patience = cfg.patience    #設定ストップカウンタ
         if not cfg.earlystopping: # patienceが-1の時はearlystoppingは発動しない
             self.patience = -1
-        self.wandb = cfg.wandb
         self.counter = 0            #現在のカウンタ値
         self.best_score = None      #ベストスコア
         self.early_stop = False     #ストップフラグ
@@ -214,8 +213,6 @@ class EarlyStopping:
                 print(f'BEST SCORE: {self.best_score:.4f}')
         else:  #ベストスコアを更新した場合
             self.best_score = score  #ベストスコアを上書き
-            if self.wandb:
-                wandb.run.summary['best_correlation'] = score
             self.checkpoint(score, model)  #モデルを保存してスコア表示
             self.counter = 0  #ストップカウンタリセット
 
