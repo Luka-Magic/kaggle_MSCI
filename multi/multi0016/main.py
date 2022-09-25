@@ -220,13 +220,13 @@ def valid_one_epoch(cfg, epoch, valid_loader, model, pca_train_target_model=None
     return {'loss': losses.avg, 'correlation': scores.avg}
 
 hyperparameter_defaults = dict(
-    dropout = 0.1,
-    hidden1 = 8,
-    hidden2 = 8,
-    hidden3 = 8,
-    hidden4 = 8,
-    latent_input_dim = 8,
-    lr = -3
+    dropout = 0.6,
+    hidden1 = 7.3,
+    hidden2 = 8.9,
+    hidden3 = 9.2,
+    hidden4 = 5.6,
+    latent_input_dim = 4,
+    lr = 0
 )
 
 wandb.init(config=hyperparameter_defaults, project='kaggle_MSCI_multi_sweep')

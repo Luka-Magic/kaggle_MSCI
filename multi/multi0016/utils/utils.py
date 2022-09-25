@@ -8,6 +8,7 @@ import pickle
 import scipy
 import gc
 from sklearn.decomposition import PCA, TruncatedSVD
+import math
 
 def seed_everything(seed):
     os.environ['PYTHONHASHSEED'] = str(seed)
@@ -197,7 +198,7 @@ class EarlyStopping:
         特殊(call)メソッド
         実際に学習ループ内で最小lossを更新したか否かを計算させる部分
         """
-        if score == float('nan'):
+        if math.isnan(score):
             self.early_stop = True
             print('loss is not a number.')
         
@@ -221,6 +222,6 @@ class EarlyStopping:
     def checkpoint(self, score, model):
         '''ベストスコア更新時に実行されるチェックポイント関数'''
         if self.verbose:  #表示を有効にした場合は、前回のベストスコアからどれだけ更新したか？を表示
-            print(f'Validation loss decreased ({self.score_before:.6f} --> {score:.6f}).  Saving model ...')
+            print(f'Validation score increased ({self.score_before:.6f} --> {score:.6f}).  Saving model ...')
         torch.save(model.state_dict(), self.path)  #ベストモデルを指定したpathに保存
         self.score_before = score
