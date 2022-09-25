@@ -209,7 +209,7 @@ def valid_one_epoch(cfg, epoch, valid_loader, model, pca_train_target_model=None
     return {'loss': losses.avg, 'correlation': scores.avg}
 
 ## Test Function
-def test_function(cfg, model, test_loader, n_samples, output_size, preds):
+def test_function(cfg, model, test_loader, n_samples, output_size, preds, pca_train_target_model):
     model.eval()
     pbar = tqdm(enumerate(test_loader), total=len(test_loader))
     
@@ -227,7 +227,11 @@ def test_function(cfg, model, test_loader, n_samples, output_size, preds):
 
         with torch.no_grad():
             pred = model(input)
-
+        
+        if cfg.pca_target is not None:
+            pred = pca_train_target_model.inverse_transform(pred.detach().cpu().numpy())
+            pred = torch.from_numpy(pred).to(cfg.device)
+        
         pred = (pred - torch.mean(pred, dim=1, keepdim=True)) / (torch.std(pred, dim=1, keepdim=True) + 1e-10)
 
         preds[start:start+bs] = pred
@@ -346,6 +350,12 @@ def main(cfg: DictConfig):
         return
     
     data_dict = load_test_data(cfg, data_dir, compressed_data_dir)
+    if cfg.pca_target is not None:
+        compressed_target_model_path = compressed_data_dir / cfg.phase / f'train_{cfg.phase}_target_{cfg.pca_input}{cfg.latent_target_dim}_model.pkl'
+        with open(compressed_target_model_path, 'rb') as f:
+            pca_train_target_model = pickle.load(f)
+    else:
+        pca_train_target_model = None
     
     test_loader = DataLoader(cfg, data_dict, train_idx=None, batch_size=cfg.test_bs, shuffle=False, drop_last=False)
 
@@ -361,7 +371,7 @@ def main(cfg: DictConfig):
         model.to(cfg.device)
 
         model.load_state_dict(torch.load(model_path))
-        preds_all = test_function(cfg, model, test_loader, n_samples, output_size, preds_all)
+        preds_all = test_function(cfg, model, test_loader, n_samples, output_size, preds_all, pca_train_target_model)
 
         del model
         torch.cuda.empty_cache()

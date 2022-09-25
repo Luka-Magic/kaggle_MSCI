@@ -65,21 +65,23 @@ def load_data(cfg, data_dir, compressed_data_dir):
             with open(compressed_input_train_path, 'rb') as f:
                 train_input_compressed = pickle.load(f)
         else:
-            concat_input = scipy.sparse.load_npz(data_dir / f'concat_{cfg.phase}_inputs_values.sparse.npz')
-            print('PCA input now...')
-            pca_input_model = TruncatedSVD(n_components=cfg.latent_input_dim, random_state=cfg.seed)
-            concat_input_compressed = pca_input_model.fit_transform(concat_input)
-            del concat_input, pca_input_model
-            gc.collect()
-            train_size = cfg.train_multi_size if cfg.phase == 'multi' else cfg.train_cite_size
-            train_input_compressed = concat_input_compressed[:train_size]
-            test_input_compressed = concat_input_compressed[train_size:]
-            with open(str(compressed_input_train_path), 'wb') as f:
-                pickle.dump(train_input_compressed, f)
-            with open(str(compressed_input_test_path), 'wb') as f:
-                pickle.dump(test_input_compressed, f)
-            
-            del test_input_compressed
+            if cfg.pca_input == 'tsvd':
+                concat_input = scipy.sparse.load_npz(data_dir / f'concat_{cfg.phase}_inputs_values.sparse.npz')
+                print('PCA input now...')
+                pca_input_model = TruncatedSVD(n_components=cfg.latent_input_dim, random_state=cfg.seed)
+                concat_input_compressed = pca_input_model.fit_transform(concat_input)
+                del concat_input, pca_input_model
+                gc.collect()
+                train_size = cfg.train_multi_size if cfg.phase == 'multi' else cfg.train_cite_size
+                train_input_compressed = concat_input_compressed[:train_size]
+                test_input_compressed = concat_input_compressed[train_size:]
+                with open(str(compressed_input_train_path), 'wb') as f:
+                    pickle.dump(train_input_compressed, f)
+                with open(str(compressed_input_test_path), 'wb') as f:
+                    pickle.dump(test_input_compressed, f)
+                del test_input_compressed
+            elif cfg.pca_input == 'umap':
+                TODO
         data_dict['input_compressed'] = train_input_compressed
         del train_input_compressed
         print('PCA input complate')
@@ -109,14 +111,17 @@ def load_data(cfg, data_dir, compressed_data_dir):
             with open(compressed_target_train_path, 'rb') as f:
                 train_target_compressed = pickle.load(f)
         else:
-            print('PCA target now...')
-            pca_train_target_model = TruncatedSVD(n_components=cfg.latent_target_dim, random_state=cfg.seed)
-            train_target_compressed = pca_train_target_model.fit_transform(train_target)
-            with open(str(compressed_target_train_path), 'wb') as f:
-                pickle.dump(train_target_compressed, f)
-            with open(str(compressed_target_model_path), 'wb') as f:
-                pickle.dump(pca_train_target_model, f)
-            del pca_train_target_model
+            if cfg.pca_target == 'tsvd':
+                print('PCA target now...')
+                pca_train_target_model = TruncatedSVD(n_components=cfg.latent_target_dim, random_state=cfg.seed)
+                train_target_compressed = pca_train_target_model.fit_transform(train_target)
+                with open(str(compressed_target_train_path), 'wb') as f:
+                    pickle.dump(train_target_compressed, f)
+                with open(str(compressed_target_model_path), 'wb') as f:
+                    pickle.dump(pca_train_target_model, f)
+                del pca_train_target_model
+            elif cfg.pca_target == 'umap':
+                TODO
         data_dict['target_compressed'] = train_target_compressed
         del train_target_compressed
         print('PCA target complate')
