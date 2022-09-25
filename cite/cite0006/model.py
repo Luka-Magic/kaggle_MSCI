@@ -7,13 +7,13 @@ class MsciModel(nn.Module):
     def __init__(self, input_channel, output_channel):
         super().__init__()
         self.mlp = nn.Sequential(
-            nn.Linear(input_channel, 64),
+            nn.Linear(input_channel, 32),
             nn.ReLU(),
-            nn.Linear(64, 1024),
+            nn.Linear(32, 512),
             nn.ReLU(),
-            nn.Linear(1024, 1024),
+            nn.Linear(512, 512),
             nn.ReLU(),
-            nn.Linear(1024, output_channel),
+            nn.Linear(512, output_channel),
             nn.Softplus()
         )
     
