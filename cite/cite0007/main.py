@@ -240,7 +240,7 @@ def main():
     # if cfg.wandb:
     #     wandb.login()
     
-    cfg.latent_input_dim = int(2**sweep_config['latent_input_dim'])
+    # cfg.latent_input_dim = int(2**sweep_config['latent_input_dim'])
     cfg.lr = 10**sweep_config['lr']
     print(f'model params: [{int(2**sweep_config.hidden1)}, {int(2**sweep_config.hidden2)}, {int(2**sweep_config.hidden3)}]')
 
