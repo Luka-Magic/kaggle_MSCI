@@ -207,6 +207,9 @@ class EarlyStopping:
             if self.counter >= self.patience and self.patience != -1:  #設定カウントを上回ったらストップフラグをTrueに変更
                 self.early_stop = True
                 print(f'BEST SCORE: {self.best_score:.4f}')
+        if score == float('nan'):
+            self.early_stop = True
+            print('loss is not a number.')
         else:  #ベストスコアを更新した場合
             self.best_score = score  #ベストスコアを上書き
             if self.wandb:
