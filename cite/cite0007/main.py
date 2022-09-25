@@ -154,16 +154,16 @@ def train_one_epoch(cfg, epoch, train_loader, model, loss_fn, optimizer, schedul
 
         optimizer.zero_grad()
 
-        if cfg.pca_input:
-            with autocast():
-                pred = model(input)
-                # pred = (pred - torch.mean(pred, dim=1, keepdim=True)) / (torch.std(pred, dim=1, keepdim=True) + 1e-10)
-                loss = loss_fn(pred, target)
-            scaler.scale(loss).backward()
-            scaler.step(optimizer)
-            scaler.update()
-        else:
-            pred = model(input)
+        # if cfg.pca_input:
+            # with autocast():
+            #     pred = model(input)
+            #     # pred = (pred - torch.mean(pred, dim=1, keepdim=True)) / (torch.std(pred, dim=1, keepdim=True) + 1e-10)
+            #     loss = loss_fn(pred, target)
+            # scaler.scale(loss).backward()
+            # scaler.step(optimizer)
+            # scaler.update()
+        # else:
+        pred = model(input)
             # pred = (pred - torch.mean(pred, dim=1, keepdim=True)) / (torch.std(pred, dim=1, keepdim=True) + 1e-10)
             loss = loss_fn(pred, target)
             loss.backward()
@@ -220,9 +220,9 @@ def valid_one_epoch(cfg, epoch, valid_loader, model, pca_train_target_model=None
     return {'loss': losses.avg, 'correlation': scores.avg}
 
 hyperparameter_defaults = dict(
-    hidden1 = 2,
-    hidden2 = 2,
-    hidden3 = 2,
+    hidden1 = 256,
+    hidden2 = 256,
+    hidden3 = 256,
     lr = -1
 )
 # # 初期設定
