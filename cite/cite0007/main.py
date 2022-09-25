@@ -285,7 +285,9 @@ def main():
         #     wandb.config['fold'] = fold
         #     wandb.config['exp_name'] = exp_name
         #     wandb.init(project=cfg.wandb_project, entity='luka-magic', name=f'{exp_name}_fold{fold}', config=wandb.config)
-        lr = 10**sweep_config['lr']
+        lr = 10**sweep_config.lr
+        print(f'lr: {lr}')
+
         save_model_path = save_dir / f'{exp_name}_fold{fold}.pth'
 
         train_indices, valid_indices = fold_list[fold]
