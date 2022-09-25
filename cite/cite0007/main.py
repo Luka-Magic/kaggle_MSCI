@@ -220,9 +220,9 @@ def valid_one_epoch(cfg, epoch, valid_loader, model, pca_train_target_model=None
     return {'loss': losses.avg, 'correlation': scores.avg}
 
 hyperparameter_defaults = dict(
-    hidden1 = 256,
-    hidden2 = 256,
-    hidden3 = 256,
+    hidden1 = 2,
+    hidden2 = 2,
+    hidden3 = 2,
     lr = -1
 )
 # # 初期設定
