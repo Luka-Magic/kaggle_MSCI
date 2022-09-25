@@ -220,10 +220,10 @@ def valid_one_epoch(cfg, epoch, valid_loader, model, pca_train_target_model=None
     return {'loss': losses.avg, 'correlation': scores.avg}
 
 hyperparameter_defaults = dict(
-    hidden1 = 7.3,
-    hidden2 = 8.9,
-    hidden3 = 9.2,
-    lr = 0
+    hidden1 = 5.0,
+    hidden2 = 5.0,
+    hidden3 = 5.0,
+    lr = -3
 )
 # # 初期設定
 cfg = OmegaConf.load('config/config.yaml')
