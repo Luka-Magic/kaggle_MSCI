@@ -220,9 +220,9 @@ def valid_one_epoch(cfg, epoch, valid_loader, model, pca_train_target_model=None
     return {'loss': losses.avg, 'correlation': scores.avg}
 
 hyperparameter_defaults = dict(
-    hidden1 = 8.0,
-    hidden2 = 8.0,
-    hidden3 = 8.0,
+    hidden1 = 256,
+    hidden2 = 256,
+    hidden3 = 256,
     lr = -1
 )
 # # 初期設定
@@ -242,7 +242,7 @@ def main():
     
     # cfg.latent_input_dim = int(2**sweep_config['latent_input_dim'])
     # cfg.lr = 10**sweep_config['lr']
-    print(f'model params: [{int(2**sweep_config.hidden1)}, {int(2**sweep_config.hidden2)}, {int(2**sweep_config.hidden3)}]')
+    # print(f'model params: [{int(2**sweep_config.hidden1)}, {int(2**sweep_config.hidden2)}, {int(2**sweep_config.hidden3)}]')
 
     exp_name = Path.cwd().name
     data_dir = Path.cwd().parents[2] / 'data' / 'data'
