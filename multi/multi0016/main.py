@@ -21,7 +21,6 @@ from sklearn.model_selection import train_test_split, KFold, GroupKFold, Stratif
 import sklearn.preprocessing
 import hydra
 from omegaconf import DictConfig, OmegaConf
-from torch.cuda.amp import autocast, GradScaler
 
 from utils.utils import seed_everything, make_coo_batch, make_coo_batch_slice, AverageMeter, EarlyStopping, load_data
 from model import MsciModel
@@ -130,7 +129,7 @@ class DataLoader:
         return self.nb_batches
 
 ## Train Function
-def train_one_epoch(cfg, epoch, train_loader, model, loss_fn, optimizer, scheduler, scaler):
+def train_one_epoch(cfg, epoch, train_loader, model, loss_fn, optimizer, scheduler):
     model.train()
     def get_lr(optimizer):
         for param_group in optimizer.param_groups:
@@ -154,20 +153,10 @@ def train_one_epoch(cfg, epoch, train_loader, model, loss_fn, optimizer, schedul
 
         optimizer.zero_grad()
 
-        if cfg.pca_input:
-            with autocast():
-                pred = model(input)
-                # pred = (pred - torch.mean(pred, dim=1, keepdim=True)) / (torch.std(pred, dim=1, keepdim=True) + 1e-10)
-                loss = loss_fn(pred, target)
-            scaler.scale(loss).backward()
-            scaler.step(optimizer)
-            scaler.update()
-        else:
-            pred = model(input)
-            # pred = (pred - torch.mean(pred, dim=1, keepdim=True)) / (torch.std(pred, dim=1, keepdim=True) + 1e-10)
-            loss = loss_fn(pred, target)
-            loss.backward()
-        optimizer.step()
+        pred = model(input)
+        # pred = (pred - torch.mean(pred, dim=1, keepdim=True)) / (torch.std(pred, dim=1, keepdim=True) + 1e-10)
+        loss = loss_fn(pred, target)
+        loss.backward()
         losses.update(loss.item(), bs)
 
         if scheduler:
@@ -312,11 +301,9 @@ def main():
         else:
             scheduler = None
 
-        scaler = GradScaler()
-
         # 学習開始
         for epoch in range(cfg.n_epochs):
-            train_result = train_one_epoch(cfg, epoch, train_loader, model, loss_fn, optimizer, scheduler, scaler)
+            train_result = train_one_epoch(cfg, epoch, train_loader, model, loss_fn, optimizer, scheduler)
             valid_result = valid_one_epoch(cfg, epoch, valid_loader, model, pca_train_target_model)
 
             # print('='*40)
