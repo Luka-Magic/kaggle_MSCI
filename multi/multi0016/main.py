@@ -233,7 +233,8 @@ def main():
     #     wandb.login()
     
     cfg.latent_input_dim = int(2**sweep_config['latent_input_dim'])
-    cfg.lr = 10**sweep_config['lr']
+    lr = 10**sweep_config['lr']
+    print(f'lr: {lr}')
     print(f'model params: [{int(2**sweep_config.hidden1)}, {int(2**sweep_config.hidden2)}, {int(2**sweep_config.hidden3)}, {int(2**sweep_config.hidden4)}]')
 
     exp_name = Path.cwd().name
@@ -290,14 +291,14 @@ def main():
         model = MsciModel(sweep_config, input_size, output_size).to(cfg.device)
 
         if cfg.optimizer == 'AdamW':
-            optimizer = torch.optim.AdamW(model.parameters(), lr=cfg.lr, weight_decay=cfg.weight_decay)
+            optimizer = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=cfg.weight_decay)
         
         if cfg.loss == 'correlation':
             loss_fn = correlation_loss
         
         if cfg.scheduler == 'OneCycleLR':
             scheduler = torch.optim.lr_scheduler.OneCycleLR(
-                optimizer, total_steps=cfg.n_epochs * len(train_loader), max_lr=cfg.lr, pct_start=cfg.pct_start, div_factor=cfg.div_factor, final_div_factor=cfg.final_div_factor)
+                optimizer, total_steps=cfg.n_epochs * len(train_loader), max_lr=lr, pct_start=cfg.pct_start, div_factor=cfg.div_factor, final_div_factor=cfg.final_div_factor)
         else:
             scheduler = None
 
