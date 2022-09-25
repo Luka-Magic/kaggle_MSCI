@@ -17,4 +17,4 @@ parameters:
     min: 3.5
     max: 9.5
   lr:
-    values: [1e-5, 1e-4, 1e-3, 1e-2, 1e-1]
+    values: [-5, -4, -3, -2, -1, 0]
