@@ -8,20 +8,20 @@ parameters:
     values: [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
   hidden1:
     distribution: uniform
-    min: 3
-    max: 10
+    min: 3.5
+    max: 9.5
   hidden2:
     distribution: uniform
-    min: 3
-    max: 10
+    min: 3.5
+    max: 9.5
   hidden3:
     distribution: uniform
-    min: 3
-    max: 10
+    min: 3.5
+    max: 9.5
   hidden4:
     distribution: uniform
-    min: 3
-    max: 10
+    min: 3.5
+    max: 9.5
   latent_input_dim:
     values: [4, 5, 6, 7, 8, 9]
   lr:
