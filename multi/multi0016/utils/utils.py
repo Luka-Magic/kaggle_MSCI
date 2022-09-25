@@ -190,26 +190,27 @@ class EarlyStopping:
         self.verbose = True
         self.score_before = -1.0
         self.path = save_path             #ベストモデル格納path
+        self.eps = 1e-4
 
     def __call__(self, score, model):
         """
         特殊(call)メソッド
         実際に学習ループ内で最小lossを更新したか否かを計算させる部分
         """
-
+        if score == float('nan'):
+            self.early_stop = True
+            print('loss is not a number.')
+        
         if self.best_score is None:  #1Epoch目の処理
             self.best_score = score   #1Epoch目はそのままベストスコアとして記録する
             self.checkpoint(score, model)  #記録後にモデルを保存してスコア表示する
-        elif score < self.best_score:  # ベストスコアを更新できなかった場合
+        elif score < self.best_score + self.eps:  # ベストスコアを更新できなかった場合
             self.counter += 1   #ストップカウンタを+1
             if self.verbose:  #表示を有効にした場合は経過を表示
                 print(f'EarlyStopping counter: {self.counter} out of {self.patience}')  #現在のカウンタを表示する 
             if self.counter >= self.patience and self.patience != -1:  #設定カウントを上回ったらストップフラグをTrueに変更
                 self.early_stop = True
                 print(f'BEST SCORE: {self.best_score:.4f}')
-        if score == float('nan'):
-            self.early_stop = True
-            print('loss is not a number.')
         else:  #ベストスコアを更新した場合
             self.best_score = score  #ベストスコアを上書き
             if self.wandb:
