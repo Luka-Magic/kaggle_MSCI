@@ -1,7 +1,6 @@
 seed: 77
-test: True
-wandb: True
-wandb_project: kaggle_MSCI_cite
+wandb: False
+wandb_project: kaggle_MSCI_cite_sweep
 phase: cite
 
 fold: GroupKFold

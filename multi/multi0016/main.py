@@ -64,12 +64,12 @@ class DataLoader:
         self.pca_target = cfg.pca_target
         self.pca_input = cfg.pca_input
         
-        if cfg.pca_input:
+        if cfg.pca_input is not None:
             self.train_inputs = data_dict['input_compressed']
         else:
             self.train_inputs = data_dict['input']
         
-        if cfg.pca_target:
+        if cfg.pca_target is not None:
             self.train_target_compressed = data_dict['target_compressed']
         self.train_target = data_dict['target']
 
@@ -98,31 +98,31 @@ class DataLoader:
         for i in range(self.nb_batches):
             slc = slice(i*self.batch_size, (i+1)*self.batch_size)
             if idx_array is None:
-                if not self.pca_input:
+                if self.pca_input is None:
                     batch_dict['input'] = make_coo_batch_slice(self.train_inputs, i*self.batch_size, (i+1)*self.batch_size)
                 else:
                     batch_dict['input_compressed'] = torch.from_numpy(self.train_inputs[i*self.batch_size:(i+1)*self.batch_size, :])
                 if self.train_target is not None:
                     batch_dict['target'] = make_coo_batch_slice(self.train_target, i*self.batch_size, (i+1)*self.batch_size)
-                    if self.pca_target:
+                    if self.pca_target is not None:
                         batch_dict['target_compressed'] = torch.from_numpy(self.train_target_compressed[i*self.batch_size:(i+1)*self.batch_size, :])
                 else:
                     batch_dict['target'] = None
-                    if self.pca_target:
+                    if self.pca_target is not None:
                         batch_dict['target_compressed'] = None
             else:
                 idx_batch = idx_array[slc]
-                if not self.pca_input:
+                if self.pca_input is None:
                     batch_dict['input'] = make_coo_batch(self.train_inputs, idx_batch)
                 else:
                     batch_dict['input_compressed'] = torch.from_numpy(self.train_inputs[idx_batch, :])
                 if self.train_target is not None:
                     batch_dict['target'] = make_coo_batch(self.train_target, idx_batch)
-                    if self.pca_target:
+                    if self.pca_target is not None:
                         batch_dict['target_compressed'] = torch.from_numpy(self.train_target_compressed[idx_batch, :])
                 else:
                     batch_dict['target'] = None
-                    if self.pca_target:
+                    if self.pca_target is not None:
                         batch_dict['target_compressed'] = None
             yield batch_dict
             
@@ -142,11 +142,11 @@ def train_one_epoch(cfg, epoch, train_loader, model, loss_fn, optimizer, schedul
     losses = AverageMeter()
 
     for step, (batch_dict) in pbar:
-        if cfg.pca_input:
+        if cfg.pca_input is not None:
             input = batch_dict['input_compressed'].to(cfg.device)
         else:
             input = batch_dict['input'].to(cfg.device)
-        if cfg.pca_target:
+        if cfg.pca_target is not None:
             target = batch_dict['target_compressed'].to(cfg.device)
         else:
             target = batch_dict['target'].to_dense().to(cfg.device)
@@ -188,11 +188,11 @@ def valid_one_epoch(cfg, epoch, valid_loader, model, pca_train_target_model=None
     scores = AverageMeter()
 
     for step, (batch_dict) in pbar:
-        if cfg.pca_input:
+        if cfg.pca_input is not None:
             input = batch_dict['input_compressed'].to(cfg.device)
         else:
             input = batch_dict['input'].to(cfg.device)
-        if cfg.pca_target:
+        if cfg.pca_target is not None:
             # target = batch_dict['target_compressed'].to(cfg.device)
             target = batch_dict['target'].to_dense().to(cfg.device)
         else:
@@ -202,7 +202,7 @@ def valid_one_epoch(cfg, epoch, valid_loader, model, pca_train_target_model=None
         with torch.no_grad():
             pred = model(input)
         
-        if cfg.pca_target:
+        if cfg.pca_target is not None:
             pred = pca_train_target_model.inverse_transform(pred.detach().cpu().numpy())
             pred = torch.from_numpy(pred).to(cfg.device)
         
@@ -228,12 +228,13 @@ hyperparameter_defaults = dict(
     latent_input_dim = 4,
     lr = 0
 )
-
-wandb.init(config=hyperparameter_defaults, project='kaggle_MSCI_multi_sweep')
-sweep_config = wandb.config
-
 # # 初期設定
 cfg = OmegaConf.load('config/config.yaml')
+
+wandb.init(config=hyperparameter_defaults, project=f'kaggle_MSCI_{cfg.phase}_sweep')
+sweep_config = wandb.config
+
+
 
 ## main
 # @hydra.main(config_path='config', config_name='config')
@@ -249,23 +250,23 @@ def main():
     exp_name = Path.cwd().name
     data_dir = Path.cwd().parents[2] / 'data' / 'data'
     compressed_data_dir = Path.cwd().parents[2] / 'data' / 'compressed_data'
-    save_dir = Path.cwd().parents[2] / 'output' / 'multi' / exp_name
+    save_dir = Path.cwd().parents[2] / 'output' / f'{cfg.phase}' / exp_name
     save_dir.mkdir(exist_ok=True)
 
     # データのロードと整形
     data_dict = load_data(cfg, data_dir, compressed_data_dir)
-    if cfg.pca_target:
-        compressed_target_model_path = compressed_data_dir / cfg.phase / f'train_{cfg.phase}_target_tsvd{cfg.latent_target_dim}_model.pkl'
+    if cfg.pca_target is not None:
+        compressed_target_model_path = compressed_data_dir / cfg.phase / f'train_{cfg.phase}_target_{cfg.pca_input}{cfg.latent_target_dim}_model.pkl'
         with open(compressed_target_model_path, 'rb') as f:
             pca_train_target_model = pickle.load(f)
     else:
         pca_train_target_model = None
     n_samples = data_dict['target'].shape[0]
-    if not cfg.pca_input:
+    if cfg.pca_input is None:
         input_size = data_dict['input'].shape[1]
     else:
         input_size = cfg.latent_input_dim
-    if not cfg.pca_target:
+    if cfg.pca_target is None:
         output_size = data_dict['target'].shape[1]
     else:
         output_size = cfg.latent_target_dim

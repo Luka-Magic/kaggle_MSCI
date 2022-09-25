@@ -122,6 +122,9 @@ def load_data(cfg, data_dir, compressed_data_dir):
                 del pca_train_target_model
             elif cfg.pca_target == 'umap':
                 TODO
+        # row-wise z-score normalization 
+        train_target_compressed = (train_target_compressed - np.mean(train_target_compressed, axis=1, keepdims=True)) / np.std(train_target_compressed, axis=1, keepdims=True)
+        
         data_dict['target_compressed'] = train_target_compressed
         del train_target_compressed
         print('PCA target complate')
