@@ -157,6 +157,7 @@ def train_one_epoch(cfg, epoch, train_loader, model, loss_fn, optimizer, schedul
         # pred = (pred - torch.mean(pred, dim=1, keepdim=True)) / (torch.std(pred, dim=1, keepdim=True) + 1e-10)
         loss = loss_fn(pred, target)
         loss.backward()
+        optimizer.step()
         losses.update(loss.item(), bs)
 
         if scheduler:

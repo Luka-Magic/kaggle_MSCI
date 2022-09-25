@@ -21,7 +21,6 @@ from sklearn.model_selection import train_test_split, KFold, GroupKFold, Stratif
 import sklearn.preprocessing
 import hydra
 from omegaconf import DictConfig, OmegaConf
-from torch.cuda.amp import autocast, GradScaler
 
 from utils.utils import seed_everything, make_coo_batch, make_coo_batch_slice, AverageMeter, EarlyStopping, load_data
 from model import MsciModel
