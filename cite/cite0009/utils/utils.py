@@ -84,10 +84,15 @@ def load_data(cfg, data_dir, compressed_data_dir):
             elif cfg.pca_input == 'umap':
                 TODO
         if cfg.eda_input is not None:
+            print('eda data concatenate...')
             eda_df = data_dir / 'train_eda.csv'
             eda_arr = eda_df.loc[:, [cfg.eda_input]].values
             eda_arr = (eda_arr - eda_arr.mean(axis=1, keepdims=True)) / eda_arr.std(axis=1, keepdims=True)
             train_input_compressed = np.concatenate([train_input_compressed, eda_arr], axis=1)
+        # row-wise z-score normalization 
+        train_input_compressed = (train_input_compressed - np.mean(train_input_compressed, axis=1, keepdims=True)) \
+            / np.std(train_input_compressed, axis=1, keepdims=True)
+        
         data_dict['input_compressed'] = train_input_compressed
         del train_input_compressed
         print('PCA input complate')
@@ -128,6 +133,12 @@ def load_data(cfg, data_dir, compressed_data_dir):
                 del pca_train_target_model
             elif cfg.pca_target == 'umap':
                 TODO
+        if cfg.eda_input is not None:
+            print('eda data concatenate...')
+            eda_df = data_dir / 'test_eda.csv'
+            eda_arr = eda_df.loc[:, [cfg.eda_input]].values
+            eda_arr = (eda_arr - eda_arr.mean(axis=1, keepdims=True)) / eda_arr.std(axis=1, keepdims=True)
+            train_target_compressed = np.concatenate([train_target_compressed, eda_arr], axis=1)
         # row-wise z-score normalization 
         train_target_compressed = (train_target_compressed - np.mean(train_target_compressed, axis=1, keepdims=True)) / np.std(train_target_compressed, axis=1, keepdims=True)
         
