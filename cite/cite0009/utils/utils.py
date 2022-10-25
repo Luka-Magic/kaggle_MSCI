@@ -3,6 +3,7 @@ import warnings
 import collections
 import torch
 import numpy as np
+import pandas as pd
 import wandb
 import pickle
 import scipy
@@ -85,7 +86,7 @@ def load_data(cfg, data_dir, compressed_data_dir):
                 TODO
         if cfg.eda_input is not None:
             print('eda data concatenate...')
-            eda_df = data_dir / 'train_eda.csv'
+            eda_df = pd.read_csv(data_dir / 'train_eda.csv')
             eda_arr = eda_df.loc[:, [cfg.eda_input]].values
             eda_arr = (eda_arr - eda_arr.mean(axis=1, keepdims=True)) / eda_arr.std(axis=1, keepdims=True)
             train_input_compressed = np.concatenate([train_input_compressed, eda_arr], axis=1)
@@ -135,7 +136,7 @@ def load_data(cfg, data_dir, compressed_data_dir):
                 TODO
         if cfg.eda_input is not None:
             print('eda data concatenate...')
-            eda_df = data_dir / 'test_eda.csv'
+            eda_df = pd.read_csv(data_dir / 'test_eda.csv')
             eda_arr = eda_df.loc[:, [cfg.eda_input]].values
             eda_arr = (eda_arr - eda_arr.mean(axis=1, keepdims=True)) / eda_arr.std(axis=1, keepdims=True)
             train_target_compressed = np.concatenate([train_target_compressed, eda_arr], axis=1)
