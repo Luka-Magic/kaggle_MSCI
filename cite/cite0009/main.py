@@ -177,14 +177,14 @@ def valid_one_epoch(cfg, epoch, valid_loader, model, pca_train_target_model=None
 
     for step, (batch_dict) in pbar:
         if cfg.pca_input is not None:
-            input = batch_dict['input_compressed'].to(cfg.devicee, dtype=torch.float32)
+            input = batch_dict['input_compressed'].to(cfg.device, dtype=torch.float32)
         else:
-            input = batch_dict['input'].to(cfg.devicee, dtype=torch.float32)
+            input = batch_dict['input'].to(cfg.device, dtype=torch.float32)
         if cfg.pca_target is not None:
             # target = batch_dict['target_compressed'].to(cfg.device)
-            target = batch_dict['target'].to_dense().to(cfg.devicee, dtype=torch.float32)
+            target = batch_dict['target'].to_dense().to(cfg.device, dtype=torch.float32)
         else:
-            target = batch_dict['target'].to_dense().to(cfg.devicee, dtype=torch.float32)
+            target = batch_dict['target'].to_dense().to(cfg.device, dtype=torch.float32)
         bs = input.shape[0]
 
         with torch.no_grad():
