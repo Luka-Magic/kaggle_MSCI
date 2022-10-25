@@ -254,6 +254,8 @@ def main():
         output_size = data_dict['target'].shape[1]
     else:
         output_size = cfg.latent_target_dim
+    if cfg.eda_input is not None:
+        input_size += len(cfg.eda_input)
 
     fold_list = create_fold(cfg, data_dir, n_samples)
     
