@@ -208,11 +208,12 @@ def valid_one_epoch(cfg, epoch, valid_loader, model, pca_train_target_model=None
     return {'loss': losses.avg, 'correlation': scores.avg}
 
 hyperparameter_defaults = dict(
-    batch_size = 9
+    batch_size = 9,
     hidden1 = 8.,
     hidden2 = 8.,
     hidden3 = 8.,
     hidden4 = 8.,
+    latent_input_dim = 5,
     lr = -1
 )
 # # 初期設定
@@ -228,7 +229,7 @@ def main():
     # if cfg.wandb:
     #     wandb.login()
     
-    # cfg.latent_input_dim = int(2**sweep_config['latent_input_dim'])
+    cfg.latent_input_dim = int(2**sweep_config['latent_input_dim'])
     # cfg.lr = 10**sweep_config['lr']
     print(f'model params: [{int(2**sweep_config.hidden1)}, {int(2**sweep_config.hidden2)}, {int(2**sweep_config.hidden3)}, {int(2**sweep_config.hidden4)}]')
 

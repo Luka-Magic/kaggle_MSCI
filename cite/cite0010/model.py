@@ -1,7 +1,6 @@
 import torch
 from torch import nn
 
-
 ## Model
 class MsciModel(nn.Module):
     def __init__(self, cfg, input_channel, output_channel):
