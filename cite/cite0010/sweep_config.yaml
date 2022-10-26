@@ -1,0 +1,26 @@
+program: main.py
+method: bayes
+metric:
+  goal: maximize
+  name: best_correlation
+parameters:
+  hidden1:
+    distribution: uniform
+    min: 3.5
+    max: 9.5
+  hidden2:
+    distribution: uniform
+    min: 3.5
+    max: 9.5
+  hidden3:
+    distribution: uniform
+    min: 3.5
+    max: 9.5
+  hidden4:
+    distribution: uniform
+    min: 3.5
+    max: 9.5
+  latent_input_dim:
+    values: [4, 5, 6, 7, 8, 9]
+  lr:
+    values: [-5, -4, -3, -2, -1]
