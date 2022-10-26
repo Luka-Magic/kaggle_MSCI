@@ -10,7 +10,7 @@ class MsciModel(nn.Module):
         self.mlp = nn.Sequential(
             nn.Linear(input_channel, int(2**cfg.hidden1)),
             nn.ReLU(),
-            nn.BatchNorm1d(input_channel, eps=1e-7),
+            nn.BatchNorm1d(int(2**cfg.hidden1), eps=1e-7),
             nn.Linear(int(2**cfg.hidden1), int(2**cfg.hidden2)),
             nn.ReLU(),            
             nn.Linear(int(2**cfg.hidden2), int(2**cfg.hidden3)),
