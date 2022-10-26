@@ -8,6 +8,7 @@ class MsciModel(nn.Module):
         super().__init__()
 
         self.mlp = nn.Sequential(
+            nn.BatchNorm1d(input_channel, eps=1e-7),
             nn.Linear(input_channel, int(2**cfg.hidden1)),
             nn.ReLU(),
             nn.BatchNorm1d(int(2**cfg.hidden1), eps=1e-7),
