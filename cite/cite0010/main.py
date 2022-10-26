@@ -208,6 +208,7 @@ def valid_one_epoch(cfg, epoch, valid_loader, model, pca_train_target_model=None
     return {'loss': losses.avg, 'correlation': scores.avg}
 
 hyperparameter_defaults = dict(
+    batch_size = 9
     hidden1 = 8.,
     hidden2 = 8.,
     hidden3 = 8.,
@@ -281,8 +282,8 @@ def main():
 
         train_indices, valid_indices = fold_list[fold]
 
-        train_loader = DataLoader(cfg, data_dict, train_idx=train_indices, batch_size=cfg.train_bs, shuffle=True, drop_last=True)
-        valid_loader = DataLoader(cfg, data_dict, train_idx=valid_indices, batch_size=cfg.valid_bs, shuffle=True, drop_last=False)
+        train_loader = DataLoader(cfg, data_dict, train_idx=train_indices, batch_size=sweep_config.batch_size, shuffle=True, drop_last=True)
+        valid_loader = DataLoader(cfg, data_dict, train_idx=valid_indices, batch_size=sweep_config.batch_size, shuffle=True, drop_last=False)
 
         earlystopping = EarlyStopping(cfg, save_model_path)
 
