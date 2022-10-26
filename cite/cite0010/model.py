@@ -13,10 +13,13 @@ class MsciModel(nn.Module):
             nn.BatchNorm1d(int(2**cfg.hidden1), eps=1e-7),
             nn.Linear(int(2**cfg.hidden1), int(2**cfg.hidden2)),
             nn.ReLU(),            
+            nn.BatchNorm1d(int(2**cfg.hidden1), eps=1e-7),
             nn.Linear(int(2**cfg.hidden2), int(2**cfg.hidden3)),
             nn.ReLU(),
+            nn.BatchNorm1d(int(2**cfg.hidden1), eps=1e-7),
             nn.Linear(int(2**cfg.hidden3), int(2**cfg.hidden4)),
             nn.ReLU(),
+            nn.BatchNorm1d(int(2**cfg.hidden1), eps=1e-7),
             nn.Linear(int(2**cfg.hidden4), output_channel),
             nn.Softplus()
         )
