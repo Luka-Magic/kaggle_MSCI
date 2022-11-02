@@ -23,7 +23,7 @@ patience: 5
 
 pca_input: tsvd
 latent_input_dim: 32
-eda_input: ['n_genes', 'n_counts']
+eda_input: #None
 pca_target: #None
 latent_target_dim: 64
 

@@ -90,8 +90,6 @@ def load_data(cfg, data_dir, compressed_data_dir):
             eda_columns = [column for column in cfg.eda_input]
             eda_arr = eda_df.loc[:, eda_columns].values
             eda_arr = (eda_arr - eda_arr.mean(axis=1, keepdims=True)) / eda_arr.std(axis=1, keepdims=True)
-            print(len(train_input_compressed))
-            print(len(eda_arr))
             train_input_compressed = np.concatenate([train_input_compressed, eda_arr], axis=1)
         # row-wise z-score normalization 
         # train_input_compressed = (train_input_compressed - np.mean(train_input_compressed, axis=1, keepdims=True)) \
