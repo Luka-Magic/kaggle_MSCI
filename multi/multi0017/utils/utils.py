@@ -86,7 +86,7 @@ def load_data(cfg, data_dir, compressed_data_dir):
                 TODO
         if cfg.eda_input is not None:
             print('eda data concatenate...')
-            eda_df = pd.read_csv(data_dir / 'train_eda.csv')
+            eda_df = pd.read_csv(data_dir / 'train_eda_multi_0004.csv')
             eda_columns = [column for column in cfg.eda_input]
             eda_arr = eda_df.loc[:, eda_columns].values
             eda_arr = (eda_arr - eda_arr.mean(axis=1, keepdims=True)) / eda_arr.std(axis=1, keepdims=True)
@@ -137,7 +137,7 @@ def load_data(cfg, data_dir, compressed_data_dir):
                 TODO
         if cfg.eda_input is not None:
             print('eda data concatenate...')
-            eda_df = pd.read_csv(data_dir / 'test_eda.csv')
+            eda_df = pd.read_csv(data_dir / 'test_eda_multi_0004.csv')
             eda_columns = [column for column in cfg.eda_input]
             eda_arr = eda_df.loc[:, eda_columns].values
             eda_arr = (eda_arr - eda_arr.mean(axis=1, keepdims=True)) / eda_arr.std(axis=1, keepdims=True)
