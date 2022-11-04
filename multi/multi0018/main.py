@@ -233,7 +233,7 @@ def main():
     cfg.valid_bs = int(2**sweep_config['batch_size'])
     # cfg.lr = 10**sweep_config['lr']
     print(f'batch_size: {cfg.train_bs}')
-    print(f'model params: [{int(2**sweep_config.hidden1)}, {int(2**sweep_config.hidden2)}, {int(2**sweep_config.hidden3)}, {int(2**sweep_config.hidden4)}]')
+    print(f'model params: [{int(2**sweep_config.hidden1)}, {int(2**sweep_config.hidden2)}, {int(2**sweep_config.hidden3)}]')
     print(f'latent_input_dim: {int(cfg.latent_input_dim)}')
     exp_name = Path.cwd().name
     data_dir = Path.cwd().parents[2] / 'data' / 'data'
