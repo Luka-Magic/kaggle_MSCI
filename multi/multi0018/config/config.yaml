@@ -1,0 +1,48 @@
+# sweep
+seed: 77
+phase: multi
+
+fold: GroupKFold
+group: donor
+n_folds: 3
+use_fold: [0, 1, 2]
+device: 'cuda:0'
+
+train_multi_size: 105942
+test_multi_size: 55935
+input_multi_size: 228942
+target_multi_size: 23418
+train_cite_size: 70988
+test_cite_size: 48663
+input_cite_size: 22050
+target_cite_size: 140
+
+n_epochs: 100
+earlystopping: True
+patience: 5
+
+pca_input: tsvd
+latent_input_dim: 32
+eda_input: #None
+pca_target: #None
+latent_target_dim: 64
+
+loss: correlation
+
+optimizer: AdamW
+lr: 1e-3
+weight_decay: 1e-2
+
+scheduler: OneCycleLR
+T_0: ${n_epochs} # CAWR
+T_mult: 1 # CAWR
+eta_min: 1e-9 # CAWR
+
+pct_start: 0.1 # OCLR
+div_factor: 25. # OCLR
+final_div_factor: 1000. # OCLR
+
+train_bs: 512
+valid_bs: 512
+test_bs: 512
+
