@@ -61,7 +61,7 @@ def load_data(cfg, data_dir, compressed_data_dir):
         ##   PCAモデル・圧縮データ共に既に存在する場合は圧縮データをロード
         ##   そうでない場合は元の入力データをロードし次元削減を行い、PCAモデルと圧縮データを共に保存 (modelはinferで使用するため)
         ##   data_dictに圧縮データだけ加える
-        if compressed_input_train_path.exists() and compressed_input_test_path.exists():
+        if compressed_input_train_path.exists():
             print('PCA input data already exists, now loading...')
             with open(compressed_input_train_path, 'rb') as f:
                 train_input_compressed = pickle.load(f)
