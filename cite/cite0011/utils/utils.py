@@ -57,7 +57,6 @@ def load_data(cfg, data_dir, compressed_data_dir):
     # 訓練データの入力の読み込み
     if cfg.pca_input is not None:
         compressed_input_train_path = compressed_data_dir / cfg.phase / f'train_{cfg.phase}_input_{cfg.pca_input}{cfg.latent_input_dim}.pkl'
-        compressed_input_test_path = compressed_data_dir / cfg.phase / f'test_{cfg.phase}_input_{cfg.pca_input}{cfg.latent_input_dim}.pkl'
         ## 入力データをpcaする場合 
         ##   PCAモデル・圧縮データ共に既に存在する場合は圧縮データをロード
         ##   そうでない場合は元の入力データをロードし次元削減を行い、PCAモデルと圧縮データを共に保存 (modelはinferで使用するため)
@@ -79,22 +78,16 @@ def load_data(cfg, data_dir, compressed_data_dir):
                 test_input_compressed = concat_input_compressed[train_size:]
                 with open(str(compressed_input_train_path), 'wb') as f:
                     pickle.dump(train_input_compressed, f)
-                with open(str(compressed_input_test_path), 'wb') as f:
-                    pickle.dump(test_input_compressed, f)
                 del test_input_compressed
             elif cfg.pca_input == 'umap':
                 TODO
         if cfg.eda_input is not None:
             print('eda data concatenate...')
-            def eda_concat(arr, train_test):
-                eda_df = pd.read_csv(data_dir / '{train_test}_eda_{cfg.phase}_.csv')
-                eda_columns = [column for column in cfg.eda_input]
-                eda_arr = eda_df.loc[:, eda_columns].values
-                eda_arr = (eda_arr - eda_arr.mean(axis=1, keepdims=True)) / eda_arr.std(axis=1, keepdims=True)
-                arr = np.concatenate([arr, eda_arr], axis=1)
-                return arr
-            train_input_compressed = eda_concat(train_input_compressed, 'train')
-            test_input_compressed = eda_concat(test_input_compressed, 'test')
+            eda_df = pd.read_csv(data_dir / 'train_eda_{cfg.phase}_0004.csv')
+            eda_columns = [column for column in cfg.eda_input]
+            eda_arr = eda_df.loc[:, eda_columns].values
+            eda_arr = (eda_arr - eda_arr.mean(axis=1, keepdims=True)) / eda_arr.std(axis=1, keepdims=True)
+            train_input_compressed = np.concatenate([train_input_compressed, eda_arr], axis=1)
         # row-wise z-score normalization 
         # train_input_compressed = (train_input_compressed - np.mean(train_input_compressed, axis=1, keepdims=True)) \
         #     / np.std(train_input_compressed, axis=1, keepdims=True)
@@ -153,6 +146,48 @@ def load_data(cfg, data_dir, compressed_data_dir):
     torch.cuda.empty_cache()
     return data_dict
 
+
+def load_test_data(cfg, data_dir, compressed_data_dir):
+    data_dict = {}
+    # テストデータの入力の読み込み
+    if cfg.pca_input is not None:
+        compressed_input_test_path = compressed_data_dir / cfg.phase / f'test_{cfg.phase}_input_{cfg.pca_input}{cfg.latent_input_dim}.pkl'
+        ## 入力データをpcaする場合
+        ##   PCAモデル・圧縮データ共に既に存在する場合は圧縮データをロード
+        ##   そうでない場合は元の入力データをロードし次元削減を行い、PCAモデルと圧縮データを共に保存 (modelはinferで使用するため)
+        ##   data_dictに圧縮データだけ加える
+        assert compressed_input_test_path.exists()
+        print('PCA input data already exists, now loading...')
+        with open(compressed_input_test_path, 'rb') as f:
+            test_input_compressed = pickle.load(f)
+        data_dict['input_compressed'] = test_input_compressed
+        del test_input_compressed
+        print('PCA input complate')
+
+        if cfg.eda_input is not None:
+            print('eda data concatenate...')
+            eda_df = pd.read_csv(data_dir / 'test_eda_{cfg.phase}_0004.csv')
+            eda_columns = [column for column in cfg.eda_input]
+            eda_arr = eda_df.loc[:, eda_columns].values
+            eda_arr = (eda_arr - eda_arr.mean(axis=1, keepdims=True)) / eda_arr.std(axis=1, keepdims=True)
+            test_input_compressed = np.concatenate([test_input_compressed, eda_arr], axis=1)
+    else:
+        # 訓練データの入力の読み込み
+        test_input = scipy.sparse.load_npz(data_dir / 'test_multi_inputs_values.sparse.npz')
+        test_input = load_csr_data_to_gpu(test_input)
+        gc.collect()
+        ## 最大値で割って0-1に正規化
+        max_input = torch.from_numpy(np.load(data_dir / 'train_multi_inputs_max_values.npz')['max_input'])[0].to(cfg.device)
+        test_input.data[...] /= max_input[test_input.indices.long()]
+        data_dict['input'] = test_input
+        del test_input, max_input
+    
+    data_dict['target'] = None
+    gc.collect()
+    torch.cuda.empty_cache()
+    return data_dict
+
+
 class AverageMeter(object):
     """Computes and stores the average and current value"""
 
@@ -210,27 +245,24 @@ class EarlyStopping:
         self.patience = cfg.patience    #設定ストップカウンタ
         if not cfg.earlystopping: # patienceが-1の時はearlystoppingは発動しない
             self.patience = -1
+        self.wandb = cfg.wandb
         self.counter = 0            #現在のカウンタ値
         self.best_score = None      #ベストスコア
         self.early_stop = False     #ストップフラグ
         self.verbose = True
         self.score_before = -1.0
         self.path = save_path             #ベストモデル格納path
-        self.eps = 1e-4
 
     def __call__(self, score, model):
         """
         特殊(call)メソッド
         実際に学習ループ内で最小lossを更新したか否かを計算させる部分
         """
-        if math.isnan(score):
-            self.early_stop = True
-            print('loss is not a number.')
-        
+
         if self.best_score is None:  #1Epoch目の処理
             self.best_score = score   #1Epoch目はそのままベストスコアとして記録する
             self.checkpoint(score, model)  #記録後にモデルを保存してスコア表示する
-        elif score < self.best_score + self.eps:  # ベストスコアを更新できなかった場合
+        elif score < self.best_score:  # ベストスコアを更新できなかった場合
             self.counter += 1   #ストップカウンタを+1
             if self.verbose:  #表示を有効にした場合は経過を表示
                 print(f'EarlyStopping counter: {self.counter} out of {self.patience}')  #現在のカウンタを表示する 
@@ -239,12 +271,14 @@ class EarlyStopping:
                 print(f'BEST SCORE: {self.best_score:.4f}')
         else:  #ベストスコアを更新した場合
             self.best_score = score  #ベストスコアを上書き
+            if self.wandb:
+                wandb.run.summary['best_correlation'] = score
             self.checkpoint(score, model)  #モデルを保存してスコア表示
             self.counter = 0  #ストップカウンタリセット
 
     def checkpoint(self, score, model):
         '''ベストスコア更新時に実行されるチェックポイント関数'''
         if self.verbose:  #表示を有効にした場合は、前回のベストスコアからどれだけ更新したか？を表示
-            print(f'Validation score increased ({self.score_before:.6f} --> {score:.6f}).  Saving model ...')
+            print(f'Validation loss decreased ({self.score_before:.6f} --> {score:.6f}).  Saving model ...')
         torch.save(model.state_dict(), self.path)  #ベストモデルを指定したpathに保存
         self.score_before = score
