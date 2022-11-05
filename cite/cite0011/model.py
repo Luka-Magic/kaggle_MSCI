@@ -16,7 +16,7 @@ class MsciModel(nn.Module):
             nn.Linear(int(2**layers[0]), int(2**layers[1])),
             nn.ReLU(),            
             nn.BatchNorm1d(int(2**layers[1]), eps=1e-7),
-            nn.Linear(int(2**layers[1]), int(layers[2])),
+            nn.Linear(int(2**layers[1]), int(2**layers[2])),
             nn.ReLU(),
             nn.BatchNorm1d(int(2**layers[2]), eps=1e-7),
             nn.Linear(int(2**layers[2]), int(2**layers[3])),
