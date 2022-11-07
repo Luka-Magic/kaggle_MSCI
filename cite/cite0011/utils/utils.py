@@ -138,7 +138,6 @@ def load_data(cfg, data_dir, compressed_data_dir):
         
         del train_target_compressed
         print('PCA target complate')
-    data_dict['target_compressed'] = train_target_compressed
     train_target = load_csr_data_to_gpu(train_target)
     data_dict['target'] = train_target
     del train_target
@@ -160,7 +159,6 @@ def load_test_data(cfg, data_dir, compressed_data_dir):
         print('PCA input data already exists, now loading...')
         with open(compressed_input_test_path, 'rb') as f:
             test_input_compressed = pickle.load(f)
-        data_dict['input_compressed'] = test_input_compressed
         print('PCA input complate')
 
         if cfg.eda_input is not None:
@@ -170,6 +168,7 @@ def load_test_data(cfg, data_dir, compressed_data_dir):
             eda_arr = eda_df.loc[:, eda_columns].values
             eda_arr = (eda_arr - eda_arr.mean(axis=1, keepdims=True)) / eda_arr.std(axis=1, keepdims=True)
             test_input_compressed = np.concatenate([test_input_compressed, eda_arr], axis=1)
+        data_dict['input_compressed'] = test_input_compressed
     else:
         # 訓練データの入力の読み込み
         test_input = scipy.sparse.load_npz(data_dir / f'test_{cfg.phace}_inputs_values.sparse.npz')
