@@ -219,9 +219,9 @@ def test_function(cfg, model, test_loader, n_samples, output_size, preds, pca_tr
     start = 0
     for step, (batch_dict) in pbar:
         if cfg.pca_input is not None:
-            input = batch_dict['input_compressed'].to(cfg.device)
+            input = batch_dict['input_compressed'].to(cfg.device, dtype=torch.float32)
         else:
-            input = batch_dict['input'].to(cfg.device)
+            input = batch_dict['input'].to(cfg.device, dtype=torch.float32)
         bs = input.shape[0]
         input = input.to(cfg.device)
 
@@ -401,7 +401,7 @@ def main(cfg: DictConfig):
         test_index = np.load(data_dir / 'test_multi_inputs_idxcol.npz',
                             allow_pickle=True)["index"]
 
-        cell_dict = dict((k,v) for v,k in enumerate(test_index)) 
+        cell_dict = dict((k,v) for v,k in enumerate(test_index))
         assert len(cell_dict)  == len(test_index)
 
         gene_dict = dict((k,v) for v,k in enumerate(y_columns))
