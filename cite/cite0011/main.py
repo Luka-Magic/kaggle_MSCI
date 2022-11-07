@@ -369,6 +369,7 @@ def main(cfg: DictConfig):
 
     model_num = 0
     for model_path in save_dir.glob('*.pth'):
+        print(f'input_size: {input_size}')
         model = MsciModel(input_size, output_size)
         model.to(cfg.device)
 
