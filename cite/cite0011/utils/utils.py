@@ -136,9 +136,9 @@ def load_data(cfg, data_dir, compressed_data_dir):
         # train_target_compressed = (train_target_compressed - np.mean(train_target_compressed, axis=1, keepdims=True)) \
         #   / np.std(train_target_compressed, axis=1, keepdims=True)
         
-        data_dict['target_compressed'] = train_target_compressed
         del train_target_compressed
         print('PCA target complate')
+    data_dict['target_compressed'] = train_target_compressed
     train_target = load_csr_data_to_gpu(train_target)
     data_dict['target'] = train_target
     del train_target
