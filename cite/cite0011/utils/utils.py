@@ -161,7 +161,6 @@ def load_test_data(cfg, data_dir, compressed_data_dir):
         with open(compressed_input_test_path, 'rb') as f:
             test_input_compressed = pickle.load(f)
         data_dict['input_compressed'] = test_input_compressed
-        del test_input_compressed
         print('PCA input complate')
 
         if cfg.eda_input is not None:
