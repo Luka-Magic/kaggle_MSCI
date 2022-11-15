@@ -277,71 +277,71 @@ def main(cfg: DictConfig):
     fold_list = create_fold(cfg, data_dir, n_samples)
 
     # foldごとに学習
-    for fold in range(cfg.n_folds):
-        if fold not in cfg.use_fold:
-            continue
+    # for fold in range(cfg.n_folds):
+    #     if fold not in cfg.use_fold:
+    #         continue
         
-        seed_everything(cfg.seed)
+    #     seed_everything(cfg.seed)
 
-        if cfg.wandb:
-            wandb.config = OmegaConf.to_container(
-                cfg, resolve=True, throw_on_missing=True)
-            wandb.config['fold'] = fold
-            wandb.config['exp_name'] = exp_name
-            wandb.init(project=cfg.wandb_project, entity='luka-magic', name=f'{exp_name}_fold{fold}', config=wandb.config)
+    #     if cfg.wandb:
+    #         wandb.config = OmegaConf.to_container(
+    #             cfg, resolve=True, throw_on_missing=True)
+    #         wandb.config['fold'] = fold
+    #         wandb.config['exp_name'] = exp_name
+    #         wandb.init(project=cfg.wandb_project, entity='luka-magic', name=f'{exp_name}_fold{fold}', config=wandb.config)
         
-        save_model_path = save_dir / f'{exp_name}_fold{fold}.pth'
+    #     save_model_path = save_dir / f'{exp_name}_fold{fold}.pth'
 
-        train_indices, valid_indices = fold_list[fold]
+    #     train_indices, valid_indices = fold_list[fold]
 
-        train_loader = DataLoader(cfg, data_dict, train_idx=train_indices, batch_size=cfg.train_bs, shuffle=True, drop_last=True)
-        valid_loader = DataLoader(cfg, data_dict, train_idx=valid_indices, batch_size=cfg.valid_bs, shuffle=True, drop_last=False)
+    #     train_loader = DataLoader(cfg, data_dict, train_idx=train_indices, batch_size=cfg.train_bs, shuffle=True, drop_last=True)
+    #     valid_loader = DataLoader(cfg, data_dict, train_idx=valid_indices, batch_size=cfg.valid_bs, shuffle=True, drop_last=False)
 
-        earlystopping = EarlyStopping(cfg, save_model_path)
+    #     earlystopping = EarlyStopping(cfg, save_model_path)
 
-        model = MsciModel(input_size, output_size).to(cfg.device)
+    #     model = MsciModel(input_size, output_size).to(cfg.device)
 
-        if cfg.optimizer == 'AdamW':
-            optimizer = torch.optim.AdamW(model.parameters(), lr=cfg.lr, weight_decay=cfg.weight_decay)
+    #     if cfg.optimizer == 'AdamW':
+    #         optimizer = torch.optim.AdamW(model.parameters(), lr=cfg.lr, weight_decay=cfg.weight_decay)
         
-        if cfg.loss == 'correlation':
-            loss_fn = correlation_loss
+    #     if cfg.loss == 'correlation':
+    #         loss_fn = correlation_loss
         
-        if cfg.scheduler == 'OneCycleLR':
-            scheduler = torch.optim.lr_scheduler.OneCycleLR(
-                optimizer, total_steps=cfg.n_epochs * len(train_loader), max_lr=cfg.lr, pct_start=cfg.pct_start, div_factor=cfg.div_factor, final_div_factor=cfg.final_div_factor)
-        else:
-            scheduler = None
+    #     if cfg.scheduler == 'OneCycleLR':
+    #         scheduler = torch.optim.lr_scheduler.OneCycleLR(
+    #             optimizer, total_steps=cfg.n_epochs * len(train_loader), max_lr=cfg.lr, pct_start=cfg.pct_start, div_factor=cfg.div_factor, final_div_factor=cfg.final_div_factor)
+    #     else:
+    #         scheduler = None
 
-        # 学習開始
-        for epoch in range(cfg.n_epochs):
-            train_result = train_one_epoch(cfg, epoch, train_loader, model, loss_fn, optimizer, scheduler)
-            valid_result = valid_one_epoch(cfg, epoch, valid_loader, model, pca_train_target_model)
+    #     # 学習開始
+    #     for epoch in range(cfg.n_epochs):
+    #         train_result = train_one_epoch(cfg, epoch, train_loader, model, loss_fn, optimizer, scheduler)
+    #         valid_result = valid_one_epoch(cfg, epoch, valid_loader, model, pca_train_target_model)
 
-            print('='*40)
-            print(f"TRAIN {epoch}, loss: {train_result['loss']}")
-            print(f"VALID {epoch}, loss: {valid_result['loss']}, score: {valid_result['correlation']}")
-            print('='*40)
+    #         print('='*40)
+    #         print(f"TRAIN {epoch}, loss: {train_result['loss']}")
+    #         print(f"VALID {epoch}, loss: {valid_result['loss']}, score: {valid_result['correlation']}")
+    #         print('='*40)
 
-            if cfg.wandb:
-                wandb.log(dict(
-                    epoch = epoch,
-                    train_loss = train_result['loss'],
-                    valid_loss = valid_result['loss'],
-                    correlation = valid_result['correlation']
-                ))
+    #         if cfg.wandb:
+    #             wandb.log(dict(
+    #                 epoch = epoch,
+    #                 train_loss = train_result['loss'],
+    #                 valid_loss = valid_result['loss'],
+    #                 correlation = valid_result['correlation']
+    #             ))
             
-            earlystopping(valid_result['correlation'], model)
-            if earlystopping.early_stop:
-                print(f'Early Stop: epoch{epoch}')
-                break
-            del train_result, valid_result
-            gc.collect()
+    #         earlystopping(valid_result['correlation'], model)
+    #         if earlystopping.early_stop:
+    #             print(f'Early Stop: epoch{epoch}')
+    #             break
+    #         del train_result, valid_result
+    #         gc.collect()
         
-        del model, loss_fn, optimizer, scheduler, train_indices, valid_indices, train_loader, valid_loader
-        wandb.finish()
-        gc.collect()
-        torch.cuda.empty_cache()
+    #     del model, loss_fn, optimizer, scheduler, train_indices, valid_indices, train_loader, valid_loader
+    #     wandb.finish()
+    #     gc.collect()
+    #     torch.cuda.empty_cache()
     
     del data_dict, fold_list, pca_train_target_model
     gc.collect()

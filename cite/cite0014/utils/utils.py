@@ -171,11 +171,11 @@ def load_test_data(cfg, data_dir, compressed_data_dir):
         data_dict['input_compressed'] = test_input_compressed
     else:
         # 訓練データの入力の読み込み
-        test_input = scipy.sparse.load_npz(data_dir / f'test_{cfg.phace}_inputs_values.sparse.npz')
+        test_input = scipy.sparse.load_npz(data_dir / f'test_{cfg.phase}_inputs_values.sparse.npz')
         test_input = load_csr_data_to_gpu(test_input)
         gc.collect()
         ## 最大値で割って0-1に正規化
-        max_input = torch.from_numpy(np.load(data_dir / f'train_{cfg.phace}_inputs_max_values.npz')['max_input'])[0].to(cfg.device)
+        max_input = torch.from_numpy(np.load(data_dir / f'train_{cfg.phase}_inputs_max_values.npz')['max_input'])[0].to(cfg.device)
         test_input.data[...] /= max_input[test_input.indices.long()]
         data_dict['input'] = test_input
         del test_input, max_input
