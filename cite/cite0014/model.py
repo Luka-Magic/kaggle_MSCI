@@ -9,7 +9,6 @@ class MsciModel(nn.Module):
         layers = [8, 8, 8]
 
         self.mlp = nn.Sequential(
-            nn.BatchNorm1d(input_channel, eps=1e-7),
             nn.Linear(input_channel, int(2**layers[0])),
             nn.ReLU(),
             nn.BatchNorm1d(int(2**layers[0]), eps=1e-7),
