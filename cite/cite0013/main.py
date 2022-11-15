@@ -44,6 +44,7 @@ def create_fold(cfg, data_dir, n_samples):
         train_idx = np.load(data_dir / f'train_{cfg.phase}_inputs_idxcol.npz', allow_pickle=True)['index']
         train_meta = pd.read_parquet(data_dir / 'metadata.parquet')
         train_meta = train_meta.query('cell_id in @train_idx').reset_index(drop=True)
+        print(train_meta.columns)
         train_meta['group12'] = train_meta.apply(lambda x:f"{x['donor']}-{x['day']}")
         print(train_meta['group12'].unique())
         kfold = GroupKFold(n_splits=cfg.n_folds)
