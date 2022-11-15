@@ -6,8 +6,8 @@ phase: multi
 
 fold: GroupKFold
 group: group12
-n_folds: 12
-use_fold: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
+n_folds: 9
+use_fold: [0, 1, 2, 3, 4, 5, 6, 7, 8]
 device: 'cuda:0'
 
 train_multi_size: 105942
