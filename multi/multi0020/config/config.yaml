@@ -23,7 +23,7 @@ n_epochs: 50
 earlystopping: True
 patience: 5
 
-pca_input: True
+pca_input: False
 latent_input_dim: 64
 pca_target: False
 latent_target_dim: 64
